@@ -6,11 +6,22 @@ using System.Threading.Tasks;
 
 namespace Isc.Yft.UsbBridge.Models
 {
+    /// <summary>本机所在位置</summary>
+    public enum USBPosition : int
+    {
+        // 外网用
+        OUTSIDE = 1,
+        // 内网用
+        INSIDE = 2
+    }
+
     /// <summary>单块数据包拥有者</summary>
     public enum PacketOwner : byte
     {
-        OuterNet = 1,
-        IntranNet = 2
+        // 外网数据包
+        OUTERNET = 1,
+        // 内网数据包
+        INTRANNET = 2
     }
 
     /// <summary>单块数据包类型</summary>
@@ -18,8 +29,8 @@ namespace Isc.Yft.UsbBridge.Models
     {
         // 业务包头packet
         HEAD = 1,
-        // 业务包packet
-        GENERAL = 2,
+        // 数据包packet
+        DATA = 2,
         // 业务包尾packet
         TAIL = 3,
         // ACK packet
@@ -39,4 +50,5 @@ namespace Isc.Yft.UsbBridge.Models
         DOWNLOAD = 2
     }
 
+    
 }

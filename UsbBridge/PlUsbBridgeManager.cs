@@ -161,7 +161,7 @@ namespace Isc.Yft.UsbBridge
                         {
                             Version = Constants.VER1,
                             Owner = owner,
-                            Type = PacketType.GENERAL,
+                            Type = PacketType.DATA,
                             TotalCount = (uint)totalCount,
                             Index = (uint)i+1,
                             TotalLength = (uint)data.Length,
