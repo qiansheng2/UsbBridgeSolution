@@ -20,7 +20,7 @@ namespace Isc.Yft.UsbBridge.Models
             AckPacket ack = new AckPacket();
             ack.Version = generalPacket.Version;
             ack.Owner = generalPacket.Owner;
-            ack.Type = PacketType.ACK;
+            ack.Type = EPacketType.ACK;
             ack.TotalCount = 1;
             ack.Index = generalPacket.Index;
             ack.TotalLength = 0;

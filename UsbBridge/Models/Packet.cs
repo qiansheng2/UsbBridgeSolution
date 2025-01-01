@@ -32,12 +32,12 @@ namespace Isc.Yft.UsbBridge.Models
         /// <summary>
         /// [1字节] 数据包拥有者
         /// </summary>
-        public PacketOwner Owner { get; set; }
+        public EPacketOwner Owner { get; set; }
 
         /// <summary>
         /// [1字节] 数据包类型
         /// </summary>
-        public PacketType Type { get; set; }
+        public EPacketType Type { get; set; }
 
         /// <summary>
         /// [4字节] 数据包总个数
@@ -83,8 +83,8 @@ namespace Isc.Yft.UsbBridge.Models
         public Packet() { }
 
         public Packet(byte version,
-                      PacketOwner owner,
-                      PacketType type,
+                      EPacketOwner owner,
+                      EPacketType type,
                       uint totalCount,
                       uint index,
                       uint totalLength,
@@ -218,9 +218,9 @@ namespace Isc.Yft.UsbBridge.Models
 
             // 验证字节值是否为有效的 PacketOwner 枚举值
             byte byteValue = buf[offset++];
-            if (Enum.IsDefined(typeof(PacketOwner), byteValue))
+            if (Enum.IsDefined(typeof(EPacketOwner), byteValue))
             {
-                packet.Owner = (PacketOwner)byteValue;
+                packet.Owner = (EPacketOwner)byteValue;
             }
             else
             {
@@ -229,9 +229,9 @@ namespace Isc.Yft.UsbBridge.Models
 
             // 验证字节值是否为有效的 Type 枚举值
             byteValue = buf[offset++];
-            if (Enum.IsDefined(typeof(PacketType), byteValue))
+            if (Enum.IsDefined(typeof(EPacketType), byteValue))
             {
-                packet.Type = (PacketType)byteValue;
+                packet.Type = (EPacketType)byteValue;
             }
             else
             {

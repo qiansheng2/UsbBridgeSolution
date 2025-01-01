@@ -33,7 +33,7 @@ namespace Isc.Yft.UsbBridge
             _manager.StopThreads();
         }
 
-        public void SendBigData(PacketOwner owner, byte[] data)
+        public void SendBigData(EPacketOwner owner, byte[] data)
         {
             _manager.SendBigData(owner, data);
         }

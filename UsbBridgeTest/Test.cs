@@ -23,14 +23,15 @@ namespace Isc.Yft.UsbBridgeTest
 
                 // 发送一些测试数据
                 byte[] dummyData = { 0x01, 0x02, 0x03, 0x04, 0x05 };
-                bridge.SendBigData(PacketOwner.OuterNet, dummyData);
+                bridge.SendBigData(EPacketOwner.OUTERNET, dummyData);
 
                 // 等待若干秒，让接收 & 监控 任务输出一些日志
                 Thread.Sleep(8000);
 
                 // 切换模式
-                bridge.SetMode(USBMode.DOWNLOAD);
-                Console.WriteLine($"[Main] 模式已切换为: [{USBMode.DOWNLOAD}].");
+                USBMode mode = new USBMode(EUSBPosition.OUTSIDE, EUSBDirection.UPLOAD);
+                bridge.SetMode(mode);
+                Console.WriteLine($"[Main] 模式已切换为: [{mode}].");
 
                 // 再等待一段时间
                 Thread.Sleep(8000);

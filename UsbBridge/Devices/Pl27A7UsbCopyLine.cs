@@ -2,6 +2,8 @@
 using System.Runtime.InteropServices;
 using System;
 using System.Runtime.Remoting.Contexts;
+using Isc.Yft.UsbBridge.Models;
+using Isc.Yft.UsbBridge.Utils;
 
 namespace Isc.Yft.UsbBridge.Devices
 {
@@ -10,10 +12,10 @@ namespace Isc.Yft.UsbBridge.Devices
 
         // ========== [2] 内部字段 ==========
 
-        // 示例 VendorID / ProductID (需要根据实际对拷线确认)
-        private const string USB_NAME = "PL27A7";
-        private const ushort USB_VID = 0x067B;
-        private const ushort USB_PID = 0x27A7;
+        // 示例 VendorID / ProductID (需要根据实际对拷线Override)
+        protected override string USB_NAME { get; set; } = "PL27A7";
+        protected override ushort USB_VID { get; set; } = 0x067B;
+        protected override ushort USB_PID { get; set; } = 0x27A7;
 
         // 根据设备描述符，EP2 OUT = 0x02, EP1 IN = 0x81
         private const byte BULK_OUT_ENDPOINT = 0x02;
@@ -21,17 +23,6 @@ namespace Isc.Yft.UsbBridge.Devices
         private const uint TIMEOUT_MS = 3000;
 
         // ========== [3] 实现 IUsbCopyLine 接口 ==========
-        public override bool OpenDevice()
-        {
-            _deviceHandle = libusb_open_device_with_vid_pid(_context, USB_VID, USB_PID);
-            if (_deviceHandle == IntPtr.Zero)
-            {
-                Console.WriteLine($"[{USB_NAME}] 打开设备失败.");
-                return false;
-            }
-            Console.WriteLine($"[{USB_NAME}] 已打开设备.");
-            return true;
-        }
 
         public override int WriteDataToDevice(byte[] data)
         {

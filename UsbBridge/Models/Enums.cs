@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Isc.Yft.UsbBridge.Models
 {
     /// <summary>本机所在位置</summary>
-    public enum USBPosition : int
+    public enum EUSBPosition : int
     {
         // 外网用
         OUTSIDE = 1,
@@ -15,8 +15,17 @@ namespace Isc.Yft.UsbBridge.Models
         INSIDE = 2
     }
 
+    /// <summary>数据传输模式</summary>
+    public enum EUSBDirection : int
+    {
+        // 上传模式（内网->外网）
+        UPLOAD = 1,
+        // 下行模式（外网->内网）
+        DOWNLOAD = 2
+    }
+
     /// <summary>单块数据包拥有者</summary>
-    public enum PacketOwner : byte
+    public enum EPacketOwner : byte
     {
         // 外网数据包
         OUTERNET = 1,
@@ -25,7 +34,7 @@ namespace Isc.Yft.UsbBridge.Models
     }
 
     /// <summary>单块数据包类型</summary>
-    public enum PacketType : byte
+    public enum EPacketType : byte
     {
         // 业务包头packet
         HEAD = 1,
@@ -40,15 +49,5 @@ namespace Isc.Yft.UsbBridge.Models
         // 心跳 packet
         HEARTBEAT = 6
     }
-
-    /// <summary>数据传输模式</summary>
-    public enum USBMode : int
-    {
-        // 上传模式（内网->外网）
-        UPLOAD = 1,
-        // 下行模式（外网->内网）
-        DOWNLOAD = 2
-    }
-
     
 }

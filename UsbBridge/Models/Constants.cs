@@ -16,6 +16,12 @@ namespace Isc.Yft.UsbBridge.Models
         public const int ContentMaxLength = 969;
         #endregion
 
+        #region LIBUSB常量
+        public const byte LIBUSB_ENDPOINT_DIR_MASK = 0x80;
+        public const byte LIBUSB_ENDPOINT_IN = 0x80;
+        public const byte LIBUSB_ENDPOINT_OUT = 0x00;
+        #endregion
+
         #region 设备常量
         #endregion
 

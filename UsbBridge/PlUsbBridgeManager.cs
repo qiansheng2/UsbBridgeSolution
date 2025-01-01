@@ -31,7 +31,7 @@ namespace Isc.Yft.UsbBridge
         private CancellationTokenSource _cts;
 
         // 用于记录当前USB工作模式
-        private USBMode _currentMode = USBMode.UPLOAD;
+        private USBMode _currentMode = new USBMode(EUSBPosition.OUTSIDE, EUSBDirection.UPLOAD);
 
         // 具体的对拷线控制实例 (PL25A1,PL27A1等)
         private readonly IUsbCopyLine _usbCopyLine;
@@ -115,7 +115,7 @@ namespace Isc.Yft.UsbBridge
             }
         }
 
-        public void SendBigData(PacketOwner owner, byte[] data)
+        public void SendBigData(EPacketOwner owner, byte[] data)
         {
             if (!_cts.IsCancellationRequested)
             {
@@ -138,7 +138,7 @@ namespace Isc.Yft.UsbBridge
                     {
                         Version = Constants.VER1,
                         Owner = owner,
-                        Type = PacketType.HEAD,
+                        Type = EPacketType.HEAD,
                         TotalCount = (uint)totalCount,
                         Index = (uint)1,
                         TotalLength = (uint)data.Length,
@@ -161,7 +161,7 @@ namespace Isc.Yft.UsbBridge
                         {
                             Version = Constants.VER1,
                             Owner = owner,
-                            Type = PacketType.DATA,
+                            Type = EPacketType.DATA,
                             TotalCount = (uint)totalCount,
                             Index = (uint)i+1,
                             TotalLength = (uint)data.Length,
@@ -185,7 +185,7 @@ namespace Isc.Yft.UsbBridge
                     {
                         Version = Constants.VER1,
                         Owner = owner,
-                        Type = PacketType.TAIL,
+                        Type = EPacketType.TAIL,
                         TotalCount = (uint)totalCount,
                         Index = (uint)totalCount-1,
                         TotalLength = (uint)data.Length,
@@ -214,10 +214,10 @@ namespace Isc.Yft.UsbBridge
             }
         }
 
-        public void SetMode(USBMode mode)
+        public void SetMode(USBMode status)
         {
-            _currentMode = mode;
-            Console.WriteLine($"[PlUsbBridgeManager] SetMode = {mode}");
+            _currentMode = status;
+            Console.WriteLine($"[PlUsbBridgeManager] SetMode = {status}");
         }
 
         public USBMode GetCurrentMode()
