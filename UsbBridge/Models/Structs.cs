@@ -7,12 +7,6 @@ using System.Threading.Tasks;
 
 namespace Isc.Yft.UsbBridge.Models
 {
-    // 定义拷贝线状态
-    public struct SCopyLineStatus
-    {
-        Local
-    }
-
     // 定义libusb结构体
     [StructLayout(LayoutKind.Sequential)]
     public struct SLibusbDeviceDescriptor
@@ -167,5 +161,17 @@ namespace Isc.Yft.UsbBridge.Models
             get => _value;
             set => _value = value;
         }
+
+        public override string ToString()
+        {
+            return $"本地: {(LocalAttached ? "连接" : "断开")}, " +
+                   $"{(LocalSuspend ? "挂起" : "活动")}, " +
+                   $"{(LocalSpeed ? "超快" : "高速")}, " +
+                   $"远端: {(RemoteAttached ? "连接" : "断开")}, " +
+                   $"{(RemoteSuspend ? "挂起" : "活动")}, " +
+                   $"{(RemoteSpeed ? "超快" : "高速")}";
+
+        }
+
     }
 }
