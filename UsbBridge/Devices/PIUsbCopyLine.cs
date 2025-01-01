@@ -12,47 +12,90 @@ namespace Isc.Yft.UsbBridge.Devices
     internal abstract class PIUsbCopyLine : IUsbCopyLine
     {
         // ========== [1] 导入 libusb-1.0 的函数  ==========
+        /// <summary>
+        /// 初始化 libusb 库，并创建一个 libusb 上下文。
+        /// </summary>
+        /// <param name="context">初始化后的 libusb 上下文指针。</param>
+        /// <returns>返回 0 表示成功，负值表示错误代码。</returns>
         [DllImport("libusb-1.0.dll", CallingConvention = CallingConvention.Cdecl)]
         protected static extern int libusb_init(out IntPtr context);
 
+        /// <summary>
+        /// 获取当前 libusb 上下文中的设备列表。
+        /// </summary>
+        /// <param name="ctx">libusb 上下文指针。</param>
+        /// <param name="list">设备列表的指针数组。</param>
+        /// <returns>返回设备数量（包括所有设备），负值表示错误代码。</returns>
         [DllImport("libusb-1.0.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern int libusb_get_device_list(IntPtr ctx, out IntPtr list);
 
+        /// <summary>
+        /// 获取指定 USB 设备的设备描述符。
+        /// </summary>
+        /// <param name="device">目标 USB 设备的指针。</param>
+        /// <param name="descriptor">设备描述符结构体的输出参数。</param>
+        /// <returns>返回 0 表示成功，负值表示错误代码。</returns>
         [DllImport("libusb-1.0.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern int libusb_get_device_descriptor(IntPtr device, out SLibusbDeviceDescriptor descriptor );
 
+        /// <summary>
+        /// 释放 libusb 库，并销毁相关的 libusb 上下文。
+        /// </summary>
+        /// <param name="context">要释放的 libusb 上下文指针。</param>
         [DllImport("libusb-1.0.dll", CallingConvention = CallingConvention.Cdecl)]
         protected static extern void libusb_exit(IntPtr context);
 
+        /// <summary>
+        /// 根据供应商 ID 和产品 ID 打开指定的 USB 设备。
+        /// </summary>
+        /// <param name="context">libusb 上下文指针。</param>
+        /// <param name="vendor_id">目标设备的供应商 ID（VID）。</param>
+        /// <param name="product_id">目标设备的产品 ID（PID）。</param>
+        /// <returns>返回设备句柄指针，如果失败则返回 IntPtr.Zero。</returns>
         [DllImport("libusb-1.0.dll", CallingConvention = CallingConvention.Cdecl)]
-        protected static extern IntPtr libusb_open_device_with_vid_pid(
-            IntPtr context,
-            ushort vendor_id,
-            ushort product_id);
+        protected static extern IntPtr libusb_open_device_with_vid_pid(IntPtr context, ushort vendor_id, ushort product_id);
 
+        /// <summary>
+        /// 关闭之前打开的 USB 设备句柄。
+        /// </summary>
+        /// <param name="deviceHandle">要关闭的设备句柄指针。</param>
         [DllImport("libusb-1.0.dll", CallingConvention = CallingConvention.Cdecl)]
         protected static extern void libusb_close(IntPtr deviceHandle);
 
+        /// <summary>
+        /// 获取 USB 设备的端口号。
+        /// </summary>
+        /// <param name="device">目标 USB 设备的指针。</param>
+        /// <returns>返回设备所在的端口号，如果设备未连接到端口则返回 0。</returns>
         [DllImport("libusb-1.0.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern byte libusb_get_port_number(IntPtr device);
 
+        /// <summary>
+        /// 获取 USB 设备的所有端口号。
+        /// </summary>
+        /// <param name="dev">目标 USB 设备的指针。</param>
+        /// <param name="portNumbers">用于接收端口号的字节数组。</param>
+        /// <param name="portNumbersLen">端口号数组的长度。</param>
+        /// <returns>返回实际获取到的端口号数量，负值表示错误代码。</returns>
         [DllImport("libusb-1.0.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern int libusb_get_port_numbers(IntPtr dev, [Out] byte[] portNumbers, int portNumbersLen);
 
+        /// <summary>
+        /// 打开指定的 USB 设备并获取其设备句柄。
+        /// </summary>
+        /// <param name="dev">目标 USB 设备的指针。</param>
+        /// <param name="dev_handle">输出参数，返回设备句柄指针。</param>
+        /// <returns>返回 0 表示成功，负值表示错误代码。</returns>
         [DllImport("libusb-1.0.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern int libusb_open(IntPtr dev, out IntPtr dev_handle);
 
+        /// <summary>
+        /// 释放之前获取的 USB 设备列表，并选择是否取消对设备的引用。
+        /// </summary>
+        /// <param name="list">设备列表的指针数组。</param>
+        /// <param name="unrefDevices">如果设置为非零值，则取消对设备的引用。</param>
         [DllImport("libusb-1.0.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern void libusb_free_device_list(IntPtr list, int unrefDevices);
-
-        [DllImport("libusb-1.0.dll", CallingConvention = CallingConvention.Cdecl)]
-        protected static extern int libusb_bulk_transfer(
-            IntPtr deviceHandle,
-            byte endpoint,
-            byte[] data,
-            int length,
-            out int transferred,
-            uint timeout);
 
         /// <summary>
         /// 获取设备配置描述
@@ -93,37 +136,38 @@ namespace Isc.Yft.UsbBridge.Devices
         public static extern int libusb_release_interface(IntPtr dev_handle, int interface_number);
 
         /// <summary>
-        /// 传输控制
+        /// 执行指定 USB 设备和端点的控制传输。
         /// </summary>
-        /// <param name="dev_handle"></param>
-        /// <param name="bmRequestType"></param>
-        /// <param name="bRequest"></param>
-        /// <param name="wValue"></param>
-        /// <param name="wIndex"></param>
-        /// <param name="data"></param>
-        /// <param name="wLength"></param>
-        /// <param name="timeout"></param>
-        /// <returns>传输数据</returns>
+        /// <param name="dev_handle">目标 USB 设备的句柄。</param>
+        /// <param name="bmRequestType">请求类型位图，定义传输方向、请求类型和接收端点。</param>
+        /// <param name="bRequest">请求代码，指定具体的控制请求。</param>
+        /// <param name="wValue">请求值，取决于具体的请求。</param>
+        /// <param name="wIndex">请求索引，通常用于指定接口或端点。</param>
+        /// <param name="data">用于发送或接收的数据缓冲区。</param>
+        /// <param name="wLength">数据缓冲区的长度（字节数）。</param>
+        /// <param name="timeout">传输超时时间（以毫秒为单位）。</param>
+        /// <returns>
+        /// 返回实际传输的字节数，如果出错则返回负值的错误代码。
+        /// </returns>
         [DllImport("libusb-1.0.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int libusb_control_transfer(IntPtr dev_handle,
-                                                    byte bmRequestType,
-                                                    byte bRequest,
-                                                    ushort wValue,
-                                                    ushort wIndex,
-                                                    byte[] data,
-                                                    ushort wLength,
-                                                    int timeout);
-        //int libusb_control_transfer(libusb_device_handle* dev_handle,
-        //    uint8_t bmRequestType,
-        //    uint8_t bRequest,
-        //    uint16_t wValue,
-        //    uint16_t wIndex,
-        //    unsigned char* data,
-        //    uint16_t wLength,
-        //    unsigned int timeout)
+        public static extern int libusb_control_transfer(IntPtr dev_handle, byte bmRequestType, byte bRequest, ushort wValue, ushort wIndex, 
+                                                         byte[] data, ushort wLength, int timeout);
 
         /// <summary>
-        /// 传输控制
+        /// 执行指定 USB 设备和端点的批量传输。
+        /// </summary>
+        /// <param name="deviceHandle">目标 USB 设备的句柄。</param>
+        /// <param name="endpoint">端点地址（必须是批量端点）。</param>
+        /// <param name="data">用于发送或接收的数据缓冲区。</param>
+        /// <param name="length">数据缓冲区的长度（字节数）。</param>
+        /// <param name="transferred">实际传输的字节数。</param>
+        /// <param name="timeout">传输超时时间（以毫秒为单位）。</param>
+        /// <returns>返回 0 表示成功，负值表示错误代码。</returns>
+        [DllImport("libusb-1.0.dll", CallingConvention = CallingConvention.Cdecl)]
+        protected static extern int libusb_bulk_transfer(IntPtr deviceHandle, byte endpoint, byte[] data, int length, out int transferred, uint timeout);
+
+        /// <summary>
+        /// 获取错误信息
         /// </summary>
         /// <param name="dev_handle"></param>
         /// <returns>错误信息</returns>
@@ -145,13 +189,12 @@ namespace Isc.Yft.UsbBridge.Devices
         protected int  _bulk_interface_no = 0;
         protected byte _bulk_in_address = 0x00;
         protected byte _bulk_out_address = 0x00;
-        IntPtr copylineConfigPtr = IntPtr.Zero;
+        protected IntPtr _copyline_config_ptr = IntPtr.Zero;
 
         // VendorID / ProductID (需要根据实际对拷线数据覆盖)
         protected virtual string USB_NAME { get; set; } = "";
         protected virtual ushort USB_VID { get; set; } = 0x0000;
         protected virtual ushort USB_PID { get; set; } = 0x0000;
-
 
         // ========== [3] 实现 IUsbCopyLine 接口 ==========
         public abstract int WriteDataToDevice(byte[] data);
@@ -228,12 +271,12 @@ namespace Isc.Yft.UsbBridge.Devices
                         }
 
                         // 获取配置描述符
-                        result = libusb_get_active_config_descriptor(devicePtr, out copylineConfigPtr);
-                        if (result != 0 || copylineConfigPtr == IntPtr.Zero)
+                        result = libusb_get_active_config_descriptor(devicePtr, out _copyline_config_ptr);
+                        if (result != 0 || _copyline_config_ptr == IntPtr.Zero)
                         {
                             throw new InvalidOperationException($"[{USB_NAME}]libusb_get_active_config_descriptor获取设备描述符信息失败: {get_libusb_error_name(result)}");
                         }
-                        SLibusbConfigDescriptor configDesc = Marshal.PtrToStructure<SLibusbConfigDescriptor>(copylineConfigPtr);
+                        SLibusbConfigDescriptor configDesc = Marshal.PtrToStructure<SLibusbConfigDescriptor>(_copyline_config_ptr);
                         Console.WriteLine($"    NumInterfaces = {configDesc.bNumInterfaces}");
                         Console.WriteLine($"    Total Length = {configDesc.wTotalLength}");
                         Console.WriteLine($"    Max Power = {configDesc.MaxPower}");
@@ -292,34 +335,16 @@ namespace Isc.Yft.UsbBridge.Devices
                         }
                         Console.WriteLine("--------------------------------------------------------------");
 
-                        // 获取设备活动状态
-                        // 声明usb设备的端口
-                        result = libusb_claim_interface(_deviceHandle, _bulk_interface_no);
-                        if (result != 0)
-                        {
-                            throw new InvalidOperationException($"[{USB_NAME}] 声明硬件接口失败: {get_libusb_error_name(result)}");
-                        }
-                        // 检查本地设备和远程设备的各种状态
-                        byte[] devStatusBuffer = new byte[16];
-                        result = libusb_control_transfer(_deviceHandle, 0xC0, 0xF1, 0, 0, devStatusBuffer, 2, 500);
-                        if (result != 0)
-                        {
-                            throw new InvalidOperationException($"[{USB_NAME}] 获取设备状态失败: {get_libusb_error_name(result)}");
-                        }
-                        // 将字节数组转换为结构体
-                        SDEV_STATUS devStatus = CommonUtil.ByteArrayToStructure<SDEV_STATUS>(devStatusBuffer);
-
-                        // 打印设备状态
-                        Console.WriteLine($"Local device status: {(devStatus.localSuspend ? "Suspend" : "Active")}, " +
-                                          $"{(devStatus.localAttached ? "Attached" : "Unplug")}, " +
-                                          $"{(devStatus.localSpeed ? "Super speed" : "High speed")}");
-                        Console.WriteLine($"Remote device status: {(devStatus.remoteSuspend ? "Suspend" : "Active")}, " +
-                                          $"{(devStatus.remoteAttached ? "Attached" : "Unplug")}, " +
-                                          $"{(devStatus.remoteSpeed ? "Super speed" : "High speed")}");
+                        result = SetCopyLineStatus(_deviceHandle, _bulk_interface_no);
 
                         // 释放配置描述符
-                        libusb_free_config_descriptor(copylineConfigPtr);
-                        copylineConfigPtr = IntPtr.Zero;
+                        libusb_free_config_descriptor(_copyline_config_ptr);
+                        _copyline_config_ptr = IntPtr.Zero;
+
+                        // 关闭usb
+                        libusb_close(_deviceHandle);
+                        _deviceHandle = IntPtr.Zero;
+
                     }
                 }
                 // 释放设备列表
@@ -332,9 +357,15 @@ namespace Isc.Yft.UsbBridge.Devices
             }
             finally
             {
-                if (copylineConfigPtr != IntPtr.Zero)
+                if (_copyline_config_ptr != IntPtr.Zero)
                 {
-                    libusb_free_config_descriptor(copylineConfigPtr);
+                    // 释放usb描述符
+                    libusb_free_config_descriptor(_copyline_config_ptr);
+                }
+                if (_deviceHandle != IntPtr.Zero)
+                {
+                    // 关闭usb
+                    libusb_close(_deviceHandle);
                 }
                 if (_deviceList != IntPtr.Zero)
                 {
@@ -344,6 +375,52 @@ namespace Isc.Yft.UsbBridge.Devices
             }
 
             return true;
+        }
+
+        private int SetCopyLineStatus( IntPtr deviceHandle, int interface_no)
+        {
+            // 获取设备活动状态
+            // 声明usb设备的端口
+            int result = libusb_claim_interface(deviceHandle, interface_no);
+            if (result != 0)
+            {
+                throw new InvalidOperationException($"[{USB_NAME}] 声明硬件接口失败: {get_libusb_error_name(result)}");
+            }
+            // 检查本地设备和远程设备的各种状态
+            byte[] devStatusBuffer = new byte[2];
+            result = libusb_control_transfer(deviceHandle, 0xC0, 0xF1, 0, 0, devStatusBuffer, 2, 500);
+            if (result < 0)
+            {
+                result = libusb_release_interface(deviceHandle, interface_no);
+                if (result != 0)
+                {
+                    throw new InvalidOperationException($"[{USB_NAME}] 获取设备状态失败后，释放硬件接口失败: {get_libusb_error_name(result)}");
+                }
+                throw new InvalidOperationException($"[{USB_NAME}] 获取设备状态失败: {get_libusb_error_name(result)}");
+            }
+            else
+            {
+                string binaryString = CommonUtil.ByteArrayToBinaryString(devStatusBuffer);
+                Console.WriteLine($"{USB_NAME} libusb_control_transfer()获取了{result}字节的状态信息: {binaryString}");
+            }
+            // 将字节数组转换为结构体
+            SDEV_STATUS devStatus = CommonUtil.ByteArrayToStructure<SDEV_STATUS>(devStatusBuffer);
+
+            // 打印设备状态
+            Console.WriteLine($"Local device status: {(devStatus.LocalSuspend ? "Suspend" : "Active")}, " +
+                              $"{(devStatus.LocalAttached ? "Attached" : "Unplug")}, " +
+                              $"{(devStatus.LocalSpeed ? "Super speed" : "High speed")}");
+            Console.WriteLine($"Remote device status: {(devStatus.RemoteSuspend ? "Suspend" : "Active")}, " +
+                              $"{(devStatus.RemoteAttached ? "Attached" : "Unplug")}, " +
+                              $"{(devStatus.RemoteSpeed ? "Super speed" : "High speed")}");
+            // 释放usb设备的端口
+            result = libusb_release_interface(deviceHandle, interface_no);
+            if (result != 0)
+            {
+                throw new InvalidOperationException($"[{USB_NAME}] 释放硬件接口失败: {get_libusb_error_name(result)}");
+            }
+
+            return result;
         }
 
         public void CloseDevice()

@@ -18,5 +18,19 @@ namespace Isc.Yft.UsbBridge.Utils
             Marshal.FreeHGlobal(ptr);
             return structure;
         }
+
+        /// <summary>
+        /// 将字节数组转换为连续的二进制字符串。
+        /// 例如，{0x83, 0x9C} 将被转换为 "1000001110011100"
+        /// </summary>
+        /// <param name="bytes">要转换的字节数组。</param>
+        /// <returns>表示字节数组的二进制字符串。</returns>
+        public static string ByteArrayToBinaryString(byte[] bytes)
+        {
+            if (bytes == null || bytes.Length == 0)
+                return string.Empty;
+
+            return string.Concat(bytes.Select(b => Convert.ToString(b, 2).PadLeft(8, '0')));
+        }
     }
 }

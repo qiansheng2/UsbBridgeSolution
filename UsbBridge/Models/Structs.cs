@@ -7,6 +7,11 @@ using System.Threading.Tasks;
 
 namespace Isc.Yft.UsbBridge.Models
 {
+    // 定义拷贝线状态
+    public struct SCopyLineStatus
+    {
+        Local
+    }
 
     // 定义libusb结构体
     [StructLayout(LayoutKind.Sequential)]
@@ -78,18 +83,89 @@ namespace Isc.Yft.UsbBridge.Models
         public int bNumEndpoints;           // Length of the extra descriptors, in bytes.
     }
 
-    /// <summary>结构体对应libusb中的DEV_STATUS</summary>
-    [StructLayout(LayoutKind.Sequential)]
+    /// <summary>
+    /// 结构体对应libusb中的DEV_STATUS
+    /// </summary>
     public struct SDEV_STATUS
     {
-        public bool localSuspend;           // 本地设备是否挂起
-        public bool localAttached;          // 本地设备是否连接
-        public bool localSpeed;             // 本地设备速度（超级速度或高速）
-        public byte pad1;                   // 填充字段
-        public bool remoteSuspend;          // 远程设备是否挂起
-        public bool remoteAttached;         // 远程设备是否连接
-        public bool remoteSpeed;            // 远程设备速度（超级速度或高速）
-        public byte pad2;                   // 填充字段
-    }
+        private ushort _value; // 用于存储所有字段的 16 位无符号整数
 
+        // pad (位 0), 补位
+        public bool Pad
+        {
+            get => (_value & (1 << 0)) != 0;
+            set => _value = value ? (ushort)(_value | (1 << 0)) : (ushort)(_value & ~(1 << 0));
+        }
+
+        // localAttached (位 1)（0：断开，1：已连接）
+        public bool LocalAttached
+        {
+            get => (_value & (1 << 1)) != 0;
+            set => _value = value ? (ushort)(_value | (1 << 1)) : (ushort)(_value & ~(1 << 1));
+        }
+
+        // localSpeed (位 2)（0：高速，1：超高速）
+        public bool LocalSpeed
+        {
+            get => (_value & (1 << 2)) != 0;
+            set => _value = value ? (ushort)(_value | (1 << 2)) : (ushort)(_value & ~(1 << 2));
+        }
+
+        // localSuspend (位 3)（0：活动，1：挂起）
+        public bool LocalSuspend
+        {
+            get => (_value & (1 << 3)) != 0;
+            set => _value = value ? (ushort)(_value | (1 << 3)) : (ushort)(_value & ~(1 << 3));
+        }
+
+        // pad1 (位 4-8, 共 5 位) 补位
+        public byte Pad1
+        {
+            get => (byte)((_value >> 4) & 0x1F); // 提取位 4-8 (5 位)
+            set
+            {
+                _value = (ushort)(_value & ~(0x1F << 4)); // 清除位 4-8
+                _value |= (ushort)((value & 0x1F) << 4); // 设置新值 (限制为 5 位)
+            }
+        }
+
+        // remoteAttached (位 9) （0：断开，1：已连接）
+        public bool RemoteAttached
+        {
+            get => (_value & (1 << 9)) != 0;
+            set => _value = value ? (ushort)(_value | (1 << 9)) : (ushort)(_value & ~(1 << 9));
+        }
+
+        // remoteSpeed (位 10)（0：高速，1：超高速）
+        public bool RemoteSpeed
+        {
+            get => (_value & (1 << 10)) != 0;
+            set => _value = value ? (ushort)(_value | (1 << 10)) : (ushort)(_value & ~(1 << 10));
+        }
+
+        // remoteSuspend (位 11)（0：活动，1：挂起）
+        public bool RemoteSuspend
+        {
+            get => (_value & (1 << 11)) != 0;
+            set => _value = value ? (ushort)(_value | (1 << 11)) : (ushort)(_value & ~(1 << 11));
+        }
+
+        // pad2 (位 12-15, 共 4 位)
+        public byte Pad2
+        {
+            get => (byte)((_value >> 12) & 0x0F); // 提取位 12-15 (4 位)
+            set
+            {
+                _value = (ushort)(_value & ~(0x0F << 12)); // 清除位 12-15
+                _value |= (ushort)((value & 0x0F) << 12); // 设置新值 (限制为 4 位)
+            }
+        }
+
+        // 获取或设置原始值（16 位整数）
+        public ushort RawValue
+        {
+            get => _value;
+            set => _value = value;
+        }
+    }
 }
