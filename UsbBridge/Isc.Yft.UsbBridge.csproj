@@ -78,6 +78,7 @@
     <Compile Include="Devices\Pl25A1UsbCopyLine.cs" />
     <Compile Include="Interfaces\IUsbCopyLine.cs" />
     <Compile Include="Interfaces\IUsbBridge.cs" />
+    <Compile Include="Models\CopyLineStatus.cs" />
     <Compile Include="Models\CopyLineInfo.cs" />
     <Compile Include="Models\Structs.cs" />
     <Compile Include="Models\Constants.cs" />

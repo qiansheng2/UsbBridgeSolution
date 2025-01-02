@@ -1,4 +1,5 @@
 ﻿using Isc.Yft.UsbBridge.Interfaces;
+using Isc.Yft.UsbBridge.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,13 +38,21 @@ namespace Isc.Yft.UsbBridge.Threading
                     PlUsbBridgeManager._receiverSemaphore.Wait(_token);
                     Console.WriteLine("[DataReceiver] 开始接收数据...");
 
-                    byte[] buffer = new byte[1024 * 1000]; // 读缓冲区, 初始化为1MB
-                    // 调用对拷线的 ReadDataFromDevice
-                    int readCount = _usbCopyLine.ReadDataFromDevice(buffer);
-                    if (readCount > 0)
+                    CopyLineStatus status = _usbCopyLine.ReadCopyLineActiveStatus();
+                    if (status.Usable == ECopyLineUsable.OK)
                     {
-                        Console.WriteLine($"[DataReceiver] 接收到 {readCount} 字节: {BitConverter.ToString(buffer, 0, readCount)}");
-                        // 这里可进一步把数据交给上层或做处理
+                        byte[] buffer = new byte[1024 * 1000]; // 读缓冲区, 初始化为1MB
+                                                               // 调用对拷线的 ReadDataFromDevice
+                        int readCount = _usbCopyLine.ReadDataFromDevice(buffer);
+                        if (readCount > 0)
+                        {
+                            Console.WriteLine($"[DataReceiver] 接收到 {readCount} 字节: {BitConverter.ToString(buffer, 0, readCount)}");
+                            // 这里可进一步把数据交给上层或做处理
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[DataReceiver] USB设备不可用，无法接收数据。");
                     }
                 }
                 catch (OperationCanceledException)
@@ -52,7 +61,7 @@ namespace Isc.Yft.UsbBridge.Threading
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[DataReceiver] 未处理异常: {ex}.");
+                    Console.WriteLine($"[DataReceiver] 发生预期外异常: {ex.Message}.");
                 }
                 finally
                 {

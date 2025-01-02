@@ -136,7 +136,7 @@ namespace Isc.Yft.UsbBridge.Models
             // 计算 CRC
             byte[] buffer = BuildBytesForCrc(this);
             uint crcValue = Crc32Util.ComputeCrc32(buffer);
-            Console.WriteLine($"CRC-32: 0x{crcValue:X8}");
+            // Console.WriteLine($"CRC-32: 0x{crcValue:X8}");
             byte[] crcBytes = BitConverter.GetBytes(crcValue);
             Array.Copy(crcBytes, 0, this.Crc32, 0, 4);
         }
@@ -280,7 +280,7 @@ namespace Isc.Yft.UsbBridge.Models
             // 计算 CRC-32
             byte[] buffer = BuildBytesForCrc(this);
             uint crcValue = Crc32Util.ComputeCrc32(buffer);
-            Console.WriteLine($"CRC-32: 0x{crcValue:X8}");
+            // Console.WriteLine($"CRC-32: 0x{crcValue:X8}");
             byte[] crcBytes = BitConverter.GetBytes(crcValue);
             Array.Copy(crcBytes, 0, this.Crc32, 0, 4);
         }

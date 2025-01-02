@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Isc.Yft.UsbBridge.Models;
 
 namespace Isc.Yft.UsbBridge.Interfaces
 {
@@ -21,6 +22,16 @@ namespace Isc.Yft.UsbBridge.Interfaces
         /// </summary>
         /// <returns>成功返回true</returns>
         bool OpenDevice();
+
+        /// <summary>
+        /// 调用libusb，从拷贝线中获取拷贝线当前的物理信息，或读取上次取得的物理信息
+        /// </summary>
+        CopyLineInfo ReadCopyLineInfo();
+
+        /// <summary>
+        /// 从拷贝线中获取拷贝线当前的最新状态
+        /// </summary>
+        CopyLineStatus ReadCopyLineActiveStatus();
 
         /// <summary>
         /// 写数据 (调用 libusb_bulk_transfer 向设备发送数据)

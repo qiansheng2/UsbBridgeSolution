@@ -53,19 +53,27 @@ namespace Isc.Yft.UsbBridge.Threading
                     }
                     else
                     {
-                        // 阻塞获取下一段要发送的数据
-                        Packet[] packets = _sendQueue.Take(_token);
-
-                        if (packets != null)
+                        CopyLineStatus status = _usbCopyLine.ReadCopyLineActiveStatus();
+                        if (status.Usable == ECopyLineUsable.OK)
                         {
-                            Console.WriteLine($"[DataSender] 开始发送数据，总包数：{packets[0].TotalCount}，总字节数（含32位摘要）： {packets[0].TotalLength + 32}.");
-                            foreach (Packet packet in packets)
+                            // 阻塞获取下一段要发送的数据
+                            Packet[] packets = _sendQueue.Take(_token);
+
+                            if (packets != null)
                             {
-                                // 实际调用对拷线的 WriteDataToDevice
-                                Console.WriteLine($"[DataSender] 应发送{packet.Type}包，包数：{packet.Index}/{packet.TotalCount}，字节数： {packet.ContentLength}.");
-                                int written = _usbCopyLine.WriteDataToDevice(packet.ToBytes());
-                                Console.WriteLine($"[DataSender] 已发送 {written} 字节.");
+                                Console.WriteLine($"[DataSender] 开始发送数据，总包数：{packets[0].TotalCount}，总字节数（含32位摘要）： {packets[0].TotalLength + 32}.");
+                                foreach (Packet packet in packets)
+                                {
+                                    // 实际调用对拷线的 WriteDataToDevice
+                                    Console.WriteLine($"[DataSender] 应发送{packet.Type}包，包数：{packet.Index}/{packet.TotalCount}，字节数： {packet.ContentLength}.");
+                                    int written = _usbCopyLine.WriteDataToDevice(packet.ToBytes());
+                                    Console.WriteLine($"[DataSender] 已发送 {written} 字节.");
+                                }
                             }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[DataSender] USB设备不可用，无法发送数据。");
                         }
                     }
                 }
@@ -75,7 +83,7 @@ namespace Isc.Yft.UsbBridge.Threading
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[DataSender] 未处理异常: {ex}.");
+                    Console.WriteLine($"[DataSender] 发生预期外异常: {ex.Message}.");
                 }
                 finally
                 {

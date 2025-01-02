@@ -164,11 +164,11 @@ namespace Isc.Yft.UsbBridge.Models
 
         public override string ToString()
         {
-            return $"本地: {(LocalAttached ? "连接" : "断开")}, " +
-                   $"{(LocalSuspend ? "挂起" : "活动")}, " +
-                   $"{(LocalSpeed ? "超快" : "高速")}, " +
-                   $"远端: {(RemoteAttached ? "连接" : "断开")}, " +
-                   $"{(RemoteSuspend ? "挂起" : "活动")}, " +
+            return $"本地: {(LocalAttached ? "连接" : "断开")} - " +
+                   $"{(LocalSuspend ? "挂起" : "活动")} - " +
+                   $"{(LocalSpeed ? "超快" : "高速")};  " +
+                   $"远端: {(RemoteAttached ? "连接" : "断开")} - " +
+                   $"{(RemoteSuspend ? "挂起" : "活动")} - " +
                    $"{(RemoteSpeed ? "超快" : "高速")}";
 
         }

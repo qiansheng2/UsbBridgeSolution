@@ -38,14 +38,18 @@ namespace Isc.Yft.UsbBridge.Threading
                     PlUsbBridgeManager._monitorSemaphore.Wait(_token);
                     Console.WriteLine("[DataMonitor] 开始监控状态...");
 
-                    USBMode mode = _manager.GetCurrentMode();
-                    Console.WriteLine($"[DataMonitor] 当前USB模式：{mode}.");
-
-                    // 也可根据情况切换模式
-                    // if(someCondition) _manager.SetMode("AnotherMode");
-
-                    // 模拟监控耗时
-                    Thread.Sleep(1000);
+                    // 获取对拷线状态
+                    CopyLineStatus status = _usbCopyLine.ReadCopyLineActiveStatus();
+                    if (status.Usable == ECopyLineUsable.OK) {
+                        USBMode mode = _manager.GetCurrentMode();
+                        Console.WriteLine($"[DataMonitor] 当前USB模式：{mode}.");
+                        // 模拟监控耗时
+                        Thread.Sleep(1000);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[DataMonitor] USB设备不可用，无法监控其状态。");
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -53,7 +57,7 @@ namespace Isc.Yft.UsbBridge.Threading
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[DataMonitor] 未处理异常: {ex}.");
+                    Console.WriteLine($"[DataMonitor] 发生预期外异常: {ex.Message}.");
                 }
                 finally
                 {

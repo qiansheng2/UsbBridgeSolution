@@ -50,7 +50,19 @@ namespace Isc.Yft.UsbBridge
             bool opened = _usbCopyLine.OpenDevice();
             if (!opened)
             {
-                Console.WriteLine("[PIUsbBridge] 警告: USB设备打开失败, 后续无法通信!");
+                Console.WriteLine($"[Main] 警告: USB设备打开失败, 后续无法通信!");
+            }
+            else
+            {
+                CopyLineStatus info = _usbCopyLine.ReadCopyLineActiveStatus();
+                if (info.Usable == ECopyLineUsable.OK)
+                {
+                    Console.WriteLine($"[Main] USB设备已打开, 且设备状态为可用!");
+                }
+                else
+                {
+                    Console.WriteLine($"[Main] USB设备已打开, 但设备不可用: {info}");
+                }
             }
         }
 
@@ -68,11 +80,11 @@ namespace Isc.Yft.UsbBridge
                 _receiverTask = _dataReceiver.RunAsync();
                 _monitorTask = _dataMonitor.RunAsync();
 
-                Console.WriteLine("[PlUsbBridgeManager] 后台任务已启动。");
+                Console.WriteLine("[Main] 后台任务已启动。");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[PlUsbBridgeManager] 启动后台任务异常: {ex}");
+                Console.WriteLine($"[Main] 启动后台任务异常: {ex.Message}");
             }
         }
 
@@ -86,18 +98,18 @@ namespace Isc.Yft.UsbBridge
                 // 等待三个后台任务结束
                 Task.WaitAll(_senderTask, _receiverTask, _monitorTask);
 
-                Console.WriteLine("[PlUsbBridgeManager] 所有后台任务已退出。");
+                Console.WriteLine("[Main] 所有后台任务已退出。");
             }
             catch (AggregateException aex)
             {
                 foreach (var ex in aex.Flatten().InnerExceptions)
                 {
-                    Console.WriteLine($"[PlUsbBridgeManager] 任务运行异常: {ex.Message}");
+                    Console.WriteLine($"[Main] 任务运行异常: {ex.Message}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[PlUsbBridgeManager] StopThreads 异常: {ex}");
+                Console.WriteLine($"[Main] StopThreads 异常: {ex.Message}");
             }
             finally
             {
@@ -111,7 +123,7 @@ namespace Isc.Yft.UsbBridge
                 _usbCopyLine.CloseDevice();
                 _usbCopyLine.Exit();
 
-                Console.WriteLine("[PlUsbBridgeManager] StopThreads 已完成清理。");
+                Console.WriteLine("[Main] StopThreads 已完成清理。");
             }
         }
 
@@ -209,7 +221,7 @@ namespace Isc.Yft.UsbBridge
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[PlUsbBridgeManager] 添加数据到发送队列异常: {ex}");
+                    Console.WriteLine($"[Main] 添加数据到发送队列异常: {ex.Message}");
                 }
             }
         }
@@ -217,7 +229,7 @@ namespace Isc.Yft.UsbBridge
         public void SetMode(USBMode status)
         {
             _currentMode = status;
-            Console.WriteLine($"[PlUsbBridgeManager] SetMode = {status}");
+            Console.WriteLine($"[Main] SetMode = {status}");
         }
 
         public USBMode GetCurrentMode()
