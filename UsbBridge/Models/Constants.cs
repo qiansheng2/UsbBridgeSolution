@@ -8,10 +8,11 @@ namespace Isc.Yft.UsbBridge.Models
 {
     internal class Constants
     {
+        #region 系统运行常量
+        public const int THREAD_SWITCH_SLEEP_TIME = 500;
+        #endregion
+
         #region 数据包常量
-        /// <summary>
-        /// 数据包内容最大字节数
-        /// </summary>
         public const int VER1 = 1;
         public const int ContentMaxLength = 969;
         #endregion

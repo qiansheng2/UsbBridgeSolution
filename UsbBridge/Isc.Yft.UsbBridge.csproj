@@ -73,13 +73,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Devices\PIUsbCopyLine.cs" />
-    <Compile Include="Devices\Pl27A7UsbCopyLine.cs" />
-    <Compile Include="Devices\Pl25A1UsbCopyLine.cs" />
-    <Compile Include="Interfaces\IUsbCopyLine.cs" />
+    <Compile Include="Devices\PIUsbCopyline.cs" />
+    <Compile Include="Devices\Pl27A7UsbCopyline.cs" />
+    <Compile Include="Devices\Pl25A1UsbCopyline.cs" />
+    <Compile Include="Interfaces\IUsbCopyline.cs" />
     <Compile Include="Interfaces\IUsbBridge.cs" />
-    <Compile Include="Models\CopyLineStatus.cs" />
-    <Compile Include="Models\CopyLineInfo.cs" />
+    <Compile Include="Models\CopylineStatus.cs" />
+    <Compile Include="Models\CopylineInfo.cs" />
     <Compile Include="Models\Structs.cs" />
     <Compile Include="Models\Constants.cs" />
     <Compile Include="Models\Enums.cs" />
@@ -89,7 +89,7 @@
     <Compile Include="PlUsbBridge.cs" />
     <Compile Include="PlUsbBridgeManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Threading\DataMonitor.cs" />
+    <Compile Include="Threading\Monitor.cs" />
     <Compile Include="Threading\DataReceiver.cs" />
     <Compile Include="Threading\DataSender.cs" />
     <Compile Include="Utils\CommonUtil.cs" />

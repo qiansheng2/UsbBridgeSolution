@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace Isc.Yft.UsbBridge.Devices
 {
-    internal abstract class PIUsbCopyLine : IUsbCopyLine
+    internal abstract class PIUsbCopyline : IUsbCopyline
     {
         // ========== [1] 导入 libusb-1.0 的函数  ==========
         /// <summary>
@@ -184,8 +184,8 @@ namespace Isc.Yft.UsbBridge.Devices
 
         // ========== [2] 内部字段 ==========
         protected IntPtr _context = IntPtr.Zero;
-        protected CopyLineInfo _copyLineInfo = null;
-        protected CopyLineStatus _copyLineStatus = null;
+        protected CopylineInfo _copylineInfo = new CopylineInfo();
+        protected CopylineStatus _copylineStatus = new CopylineStatus();
         protected IntPtr _deviceHandle = IntPtr.Zero;
 
         // VendorID / ProductID (需要根据实际对拷线数据覆盖)
@@ -193,14 +193,19 @@ namespace Isc.Yft.UsbBridge.Devices
         protected virtual ushort USB_VID { get; set; } = 0x0000;
         protected virtual ushort USB_PID { get; set; } = 0x0000;
 
-        // ========== [3] 实现 IUsbCopyLine 接口 ==========
+        // ========== [3] 实现 IUsbCopyline 接口 ==========
         public abstract int WriteDataToDevice(byte[] data);
 
         public abstract int ReadDataFromDevice(byte[] buffer);
 
-        public CopyLineStatus ReadCopyLineStatus()
+        public void SetCopylineInfo(CopylineInfo copylineInfo)
         {
-            return _copyLineStatus;
+            _copylineInfo = copylineInfo;
+        }
+
+        public void SetCopylineStatus(CopylineStatus copylineStatus)
+        {
+            _copylineStatus = copylineStatus;
         }
 
         public void Initialize()
@@ -214,8 +219,8 @@ namespace Isc.Yft.UsbBridge.Devices
             Console.WriteLine($"[Main] libusb_init 成功, [{USB_NAME}]:_context:0x{_context.ToInt64():X}");
 
             // 获取usb设备信息,包括输入输出、状态等信息
-            _copyLineInfo = ReadCopyLineInfo();
-            Console.WriteLine($"[Main] ReadCopyLineInfo 成功, [{USB_NAME}]: {_copyLineInfo}");
+            _copylineInfo = ReadCopylineInfo();
+            Console.WriteLine($"[Main] ReadCopylineInfo 成功, [{USB_NAME}]: {_copylineInfo}");
 
         }
 
@@ -229,7 +234,7 @@ namespace Isc.Yft.UsbBridge.Devices
             try
             {
                 // 判断设备是否存在
-                if (_copyLineInfo == null || _copyLineInfo.DeviceExist == false) {
+                if (_copylineInfo == null || _copylineInfo.DeviceExist == false) {
                     throw new InvalidOperationException($"[{USB_NAME}]设备尚未正确初始化，无法打开.");
                 }
 
@@ -242,16 +247,16 @@ namespace Isc.Yft.UsbBridge.Devices
                 Console.WriteLine($"[{USB_NAME}] libusb_open_device_with_vid_pid 成功, _deviceHandle:0x{_deviceHandle.ToInt64():X}");
 
                 // 获取对拷线设备接口番号
-                int interface_no = _copyLineInfo.BulkInterfaceNo;
+                int interface_no = _copylineInfo.BulkInterfaceNo;
                 if( interface_no < 0)
                 {
                     throw new InvalidOperationException($"[{USB_NAME}]错误的usb接口番号.");
                 }
 
                 // 获取对拷线当前最新状态
-                _copyLineStatus = ReadCopyLineActiveStatus();
+                _copylineStatus = ReadCopylineStatus();
                 // 输出当前设备状态
-                if (_copyLineStatus.Usable == ECopyLineUsable.OK)
+                if (_copylineStatus.Usable == ECopylineUsable.OK)
                 {
                     Console.WriteLine($"[{USB_NAME}] 设备状态OK，可以传输数据.");
                 }
@@ -276,14 +281,14 @@ namespace Isc.Yft.UsbBridge.Devices
         /// 获取拷贝线的基本信息
         /// </summary>
         /// <returns>成功获取：true，调用失败：false</returns>
-        public CopyLineInfo ReadCopyLineInfo()
+        public CopylineInfo ReadCopylineInfo()
         {
 
-            if ( _copyLineInfo != null )
+            if ( _copylineInfo != null )
                 // 已经读取过，直接返回
-                return _copyLineInfo;
+                return _copylineInfo;
 
-            CopyLineInfo return_info = new CopyLineInfo();
+            CopylineInfo return_info = new CopylineInfo();
             IntPtr _localDeviceList = IntPtr.Zero;            
             IntPtr _localCopylineConfigPtr = IntPtr.Zero;
             IntPtr _localDeviceHandle = IntPtr.Zero;
@@ -297,7 +302,7 @@ namespace Isc.Yft.UsbBridge.Devices
                 }
                 else
                     Console.WriteLine($"[Main] [{USB_NAME}]发现了{deviceCount}个USB设备.");
-
+                                                                                                                
                 // 获取所需设备
                 for (int i = 0; i < deviceCount; i++)
                 {
@@ -457,26 +462,33 @@ namespace Isc.Yft.UsbBridge.Devices
         /// <summary>
         /// 获取拷贝线的当前活动状态
         /// </summary>
-        /// <returns></returns>
+        /// <param name="fromHardware">是否真正读取usb硬件状态</param>
+        /// <returns>对拷线状态</returns>
         /// <exception cref="InvalidOperationException"></exception>
-        public CopyLineStatus ReadCopyLineActiveStatus()
+        public CopylineStatus ReadCopylineStatus(bool fromHardware = true)
         {
-            // 获取设备活动状态
             // 声明usb设备的端口
-            CopyLineStatus return_status = new CopyLineStatus();
+            CopylineStatus return_status = new CopylineStatus();
 
             try
             {
+                // 如果不需要读取usb硬件，就直接返回类变量
+                if (!fromHardware)
+                {
+                    return _copylineStatus;
+                }
+
+                // 从usb硬件获取设备活动状态
                 if (_deviceHandle == IntPtr.Zero)
                 {
                     throw new InvalidOperationException($"[{USB_NAME}] _deviceHandle为空，无法继续.");
                 }
-                if (_copyLineInfo.BulkInterfaceNo < 0)
+                if (_copylineInfo.BulkInterfaceNo < 0)
                 {
-                    throw new InvalidOperationException($"[{USB_NAME}] BulkInterfaceNo接口番号[{_copyLineInfo.BulkInterfaceNo}]内容错误, 无法继续.");
+                    throw new InvalidOperationException($"[{USB_NAME}] BulkInterfaceNo接口番号[{_copylineInfo.BulkInterfaceNo}]内容错误, 无法继续.");
                 }
 
-                int result = libusb_claim_interface(_deviceHandle, _copyLineInfo.BulkInterfaceNo);
+                int result = libusb_claim_interface(_deviceHandle, _copylineInfo.BulkInterfaceNo);
                 if (result != 0)
                 {
                     throw new InvalidOperationException($"[{USB_NAME}] 声明硬件接口失败: {get_libusb_error_name(result)}");
@@ -509,7 +521,7 @@ namespace Isc.Yft.UsbBridge.Devices
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Main] {ex.Message}");
+                // Console.WriteLine($"[Main] {ex.Message}");
                 throw ex;
             }
             finally
@@ -517,7 +529,7 @@ namespace Isc.Yft.UsbBridge.Devices
                 // 释放usb设备的端口
                 if(_deviceHandle != IntPtr.Zero)
                 {
-                    libusb_release_interface(_deviceHandle, _copyLineInfo.BulkInterfaceNo);
+                    libusb_release_interface(_deviceHandle, _copylineInfo.BulkInterfaceNo);
                 }
             }
             return return_status;

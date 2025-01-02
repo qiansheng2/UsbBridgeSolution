@@ -14,12 +14,12 @@ namespace Isc.Yft.UsbBridge.Threading
         private readonly CancellationToken _token;
 
         // 具体的对拷线控制实例
-        private readonly IUsbCopyLine _usbCopyLine;
+        private readonly IUsbCopyline _usbCopyline;
 
-        public DataReceiver(CancellationToken token, IUsbCopyLine usbCopyLine)
+        public DataReceiver(CancellationToken token, IUsbCopyline usbCopyline)
         {
             _token = token;
-            _usbCopyLine = usbCopyLine;
+            _usbCopyline = usbCopyline;
         }
 
         public Task RunAsync()
@@ -38,12 +38,12 @@ namespace Isc.Yft.UsbBridge.Threading
                     PlUsbBridgeManager._receiverSemaphore.Wait(_token);
                     Console.WriteLine("[DataReceiver] 开始接收数据...");
 
-                    CopyLineStatus status = _usbCopyLine.ReadCopyLineActiveStatus();
-                    if (status.Usable == ECopyLineUsable.OK)
+                    CopylineStatus status = _usbCopyline.ReadCopylineStatus(false);
+                    if (status.Usable == ECopylineUsable.OK)
                     {
                         byte[] buffer = new byte[1024 * 1000]; // 读缓冲区, 初始化为1MB
                                                                // 调用对拷线的 ReadDataFromDevice
-                        int readCount = _usbCopyLine.ReadDataFromDevice(buffer);
+                        int readCount = _usbCopyline.ReadDataFromDevice(buffer);
                         if (readCount > 0)
                         {
                             Console.WriteLine($"[DataReceiver] 接收到 {readCount} 字节: {BitConverter.ToString(buffer, 0, readCount)}");
@@ -68,7 +68,7 @@ namespace Isc.Yft.UsbBridge.Threading
                     // 唤醒监控线程
                     Console.WriteLine("[DataReceiver] 资源清理完毕.");
                     PlUsbBridgeManager._monitorSemaphore.Release();
-                    Thread.Sleep(1000); // 释放 CPU
+                    Thread.Sleep(Constants.THREAD_SWITCH_SLEEP_TIME); // 释放 CPU
                 }
             }
         }

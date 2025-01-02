@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Isc.Yft.UsbBridge.Models
 {
-    public class CopyLineInfo
+    public class CopylineInfo
     {
         // 锁对象，用于同步
         private readonly object _lock = new object();

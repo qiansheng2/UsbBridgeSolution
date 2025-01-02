@@ -7,7 +7,7 @@ using Isc.Yft.UsbBridge.Utils;
 
 namespace Isc.Yft.UsbBridge.Devices
 {
-    internal class Pl25A1UsbCopyLine : PIUsbCopyLine
+    internal class Pl25A1UsbCopyline : PIUsbCopyline
     {
 
         // ========== [2] 内部字段 ==========
@@ -22,7 +22,7 @@ namespace Isc.Yft.UsbBridge.Devices
         private const byte BULK_IN_ENDPOINT = 0x81;
         private const uint TIMEOUT_MS = 3000;
 
-        // ========== [3] 实现 IUsbCopyLine 接口 ==========
+        // ========== [3] 实现 IUsbCopyline 接口 ==========
 
         public override int WriteDataToDevice(byte[] data)
         {

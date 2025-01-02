@@ -18,15 +18,15 @@ namespace Isc.Yft.UsbBridge.Threading
         private readonly CancellationToken _token;
 
         // 具体的对拷线控制实例
-        private readonly IUsbCopyLine _usbCopyLine;
+        private readonly IUsbCopyline _usbCopyline;
 
         public DataSender(BlockingCollection<Packet[]> sendQueue,
                           CancellationToken token,
-                          IUsbCopyLine usbCopyLine)
+                          IUsbCopyline usbCopyline)
         {
             _sendQueue = sendQueue;
             _token = token;
-            _usbCopyLine = usbCopyLine;
+            _usbCopyline = usbCopyline;
         }
 
         public Task RunAsync()
@@ -43,18 +43,20 @@ namespace Isc.Yft.UsbBridge.Threading
                 {
                     // 获取发送线程开始许可
                     PlUsbBridgeManager._senderSemaphore.Wait(_token);
-                    Console.WriteLine("[DataSender] 检查是否有待发送数据...");
+                    Console.WriteLine("[DataSender] 开始发送数据...");
 
-                    // 检查队列是否有数据，避免长时间阻塞
-                    if (_sendQueue.Count == 0)
+                    // 检查拷贝线状态是否可用
+                    CopylineStatus status = _usbCopyline.ReadCopylineStatus(false);
+                    if (status.Usable == ECopylineUsable.OK)
                     {
-                        Console.WriteLine("[DataSender] 队列为空，当前没有待发送数据.");
-                        Thread.Sleep(500); // 避免忙等，释放 CPU
-                    }
-                    else
-                    {
-                        CopyLineStatus status = _usbCopyLine.ReadCopyLineActiveStatus();
-                        if (status.Usable == ECopyLineUsable.OK)
+                        Console.WriteLine("[DataSender] 检查是否有待发送数据...");
+                        // 检查队列是否有数据，避免长时间阻塞
+                        if (_sendQueue.Count == 0)
+                        {
+                            Console.WriteLine("[DataSender] 队列为空，当前没有待发送数据.");
+                            Thread.Sleep(500); // 避免忙等，释放 CPU
+                        }
+                        else
                         {
                             // 阻塞获取下一段要发送的数据
                             Packet[] packets = _sendQueue.Take(_token);
@@ -66,15 +68,15 @@ namespace Isc.Yft.UsbBridge.Threading
                                 {
                                     // 实际调用对拷线的 WriteDataToDevice
                                     Console.WriteLine($"[DataSender] 应发送{packet.Type}包，包数：{packet.Index}/{packet.TotalCount}，字节数： {packet.ContentLength}.");
-                                    int written = _usbCopyLine.WriteDataToDevice(packet.ToBytes());
+                                    int written = _usbCopyline.WriteDataToDevice(packet.ToBytes());
                                     Console.WriteLine($"[DataSender] 已发送 {written} 字节.");
                                 }
                             }
                         }
-                        else
-                        {
-                            Console.WriteLine($"[DataSender] USB设备不可用，无法发送数据。");
-                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[DataSender] USB设备不可用，无法发送数据。");
                     }
                 }
                 catch (OperationCanceledException)
@@ -90,7 +92,7 @@ namespace Isc.Yft.UsbBridge.Threading
                     // 唤醒读取线程
                     Console.WriteLine("[DataSender] 资源清理完毕.");
                     PlUsbBridgeManager._receiverSemaphore.Release();
-                    Thread.Sleep(1000); // 释放 CPU
+                    Thread.Sleep(Constants.THREAD_SWITCH_SLEEP_TIME); // 释放 CPU
                 }
             }
         }

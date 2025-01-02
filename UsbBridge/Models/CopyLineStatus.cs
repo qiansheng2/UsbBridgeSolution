@@ -6,33 +6,13 @@ using System.Threading.Tasks;
 
 namespace Isc.Yft.UsbBridge.Models
 {
-    public class CopyLineStatus
+    public class CopylineStatus
     {
         // 用于锁定的对象
         private readonly object _lock = new object();
 
-        // 是否进行了初始花
-        private bool _initialized = false; // 初始值设置为 false
-        public bool Initialized
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    return _initialized;
-                }
-            }
-            set
-            {
-                lock (_lock)
-                {
-                    _initialized = value;
-                }
-            }
-        }
-
         // 对拷线设备是否可用（自动计算）
-        public ECopyLineUsable Usable
+        public ECopylineUsable Usable
         {
             get
             {
@@ -40,11 +20,11 @@ namespace Isc.Yft.UsbBridge.Models
                 {
                     if (DeviceStatus.LocalAttached && DeviceStatus.RemoteAttached)
                     {
-                        return ECopyLineUsable.OK;
+                        return ECopylineUsable.OK;
                     }
                     else
                     {
-                        return ECopyLineUsable.NG;
+                        return ECopylineUsable.NG;
                     }
                 }
             }

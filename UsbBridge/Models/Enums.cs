@@ -50,7 +50,7 @@ namespace Isc.Yft.UsbBridge.Models
         HEARTBEAT = 6
     }
 
-    public enum ECopyLineUsable: byte
+    public enum ECopylineUsable: byte
     {
         // 对拷线是可用状态
         OK = 0,

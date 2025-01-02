@@ -19,7 +19,7 @@ namespace Isc.Yft.UsbBridge
         private Task _receiverTask;
         private Task _monitorTask;
 
-        private DataMonitor _dataMonitor;       // 监控线程
+        private Threading.Monitor _dataMonitor;       // 监控线程
         private DataSender _dataSender;         // 写入线程
         private DataReceiver _dataReceiver;     // 读取线程
 
@@ -34,7 +34,7 @@ namespace Isc.Yft.UsbBridge
         private USBMode _currentMode = new USBMode(EUSBPosition.OUTSIDE, EUSBDirection.UPLOAD);
 
         // 具体的对拷线控制实例 (PL25A1,PL27A1等)
-        private readonly IUsbCopyLine _usbCopyLine;
+        private readonly IUsbCopyline _usbCopyline;
 
         public PlUsbBridgeManager()
         {
@@ -42,20 +42,20 @@ namespace Isc.Yft.UsbBridge
             _cts = new CancellationTokenSource();
 
             // 这里决定用哪个芯片控制类
-            // _usbCopyLine = new Pl25A1UsbCopyLine();
-            _usbCopyLine = new Pl27A7UsbCopyLine();
+            // _usbCopyline = new Pl25A1UsbCopyline();
+            _usbCopyline = new Pl27A7UsbCopyline();
 
             // 先初始化 & 打开设备
-            _usbCopyLine.Initialize();
-            bool opened = _usbCopyLine.OpenDevice();
+            _usbCopyline.Initialize();
+            bool opened = _usbCopyline.OpenDevice();
             if (!opened)
             {
                 Console.WriteLine($"[Main] 警告: USB设备打开失败, 后续无法通信!");
             }
             else
             {
-                CopyLineStatus info = _usbCopyLine.ReadCopyLineActiveStatus();
-                if (info.Usable == ECopyLineUsable.OK)
+                CopylineStatus info = _usbCopyline.ReadCopylineStatus(true);
+                if (info.Usable == ECopylineUsable.OK)
                 {
                     Console.WriteLine($"[Main] USB设备已打开, 且设备状态为可用!");
                 }
@@ -71,9 +71,9 @@ namespace Isc.Yft.UsbBridge
             try
             {
                 // 实例化三个后台角色，并将 _syncUSBLock 传入
-                _dataSender = new DataSender(_sendQueue, _cts.Token, _usbCopyLine);
-                _dataReceiver = new DataReceiver(_cts.Token, _usbCopyLine);
-                _dataMonitor = new DataMonitor(this, _cts.Token, _usbCopyLine);
+                _dataSender = new DataSender(_sendQueue, _cts.Token, _usbCopyline);
+                _dataReceiver = new DataReceiver(_cts.Token, _usbCopyline);
+                _dataMonitor = new Threading.Monitor(this, _cts.Token, _usbCopyline);
 
                 // 运行三个任务
                 _senderTask = _dataSender.RunAsync();
@@ -120,8 +120,8 @@ namespace Isc.Yft.UsbBridge
                 _cts = new CancellationTokenSource();
 
                 // 最后关闭对拷线
-                _usbCopyLine.CloseDevice();
-                _usbCopyLine.Exit();
+                _usbCopyline.CloseDevice();
+                _usbCopyline.Exit();
 
                 Console.WriteLine("[Main] StopThreads 已完成清理。");
             }
