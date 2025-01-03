@@ -234,7 +234,7 @@ namespace Isc.Yft.UsbBridge.Devices
             try
             {
                 // 判断设备是否存在
-                if (_copylineInfo == null || _copylineInfo.DeviceExist == false) {
+                if (_copylineInfo.DeviceExist == false) {
                     throw new InvalidOperationException($"[{USB_NAME}]设备尚未正确初始化，无法打开.");
                 }
 
@@ -244,7 +244,7 @@ namespace Isc.Yft.UsbBridge.Devices
                 {
                     throw new InvalidOperationException($"[{USB_NAME}]libusb_open_device_with_vid_pid 失败.");
                 }
-                Console.WriteLine($"[{USB_NAME}] libusb_open_device_with_vid_pid 成功, _deviceHandle:0x{_deviceHandle.ToInt64():X}");
+                Console.WriteLine($"[Main] [{USB_NAME}] libusb_open_device_with_vid_pid 成功, _deviceHandle:0x{_deviceHandle.ToInt64():X}");
 
                 // 获取对拷线设备接口番号
                 int interface_no = _copylineInfo.BulkInterfaceNo;
@@ -258,11 +258,11 @@ namespace Isc.Yft.UsbBridge.Devices
                 // 输出当前设备状态
                 if (_copylineStatus.Usable == ECopylineUsable.OK)
                 {
-                    Console.WriteLine($"[{USB_NAME}] 设备状态OK，可以传输数据.");
+                    Console.WriteLine($"[Main] [{USB_NAME}] 设备状态OK，可以传输数据.");
                 }
                 else
                 {
-                    Console.WriteLine($"[{USB_NAME}] 设备状态NG，不能传输数据!");
+                    Console.WriteLine($"[Main] [{USB_NAME}] 设备状态NG，不能传输数据!");
                 }
             }
             catch (Exception ex)
@@ -283,11 +283,6 @@ namespace Isc.Yft.UsbBridge.Devices
         /// <returns>成功获取：true，调用失败：false</returns>
         public CopylineInfo ReadCopylineInfo()
         {
-
-            if ( _copylineInfo != null )
-                // 已经读取过，直接返回
-                return _copylineInfo;
-
             CopylineInfo return_info = new CopylineInfo();
             IntPtr _localDeviceList = IntPtr.Zero;            
             IntPtr _localCopylineConfigPtr = IntPtr.Zero;
@@ -503,7 +498,7 @@ namespace Isc.Yft.UsbBridge.Devices
                 else
                 {
                     string binaryString = CommonUtil.ByteArrayToBinaryString(devStatusBuffer);
-                    Console.WriteLine($"[{USB_NAME}] libusb_control_transfer()获取了{result}字节的状态信息: {binaryString}");
+                    Console.WriteLine($"[Main] [{USB_NAME}] libusb_control_transfer()获取了{result}字节的状态信息: {binaryString}");
                 }
                 // 将字节数组转换为结构体
                 SDEV_STATUS devStatus = CommonUtil.ByteArrayToStructure<SDEV_STATUS>(devStatusBuffer);

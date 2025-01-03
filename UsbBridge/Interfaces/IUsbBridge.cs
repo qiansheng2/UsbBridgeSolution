@@ -1,5 +1,5 @@
 ﻿using System;
-using System.ServiceModel;
+using System.Threading.Tasks;
 using Isc.Yft.UsbBridge.Models;
 
 namespace Isc.Yft.UsbBridge.Interfaces
@@ -23,7 +23,7 @@ namespace Isc.Yft.UsbBridge.Interfaces
         /// 发送需要分解为多个数据包的大数据
         /// </summary>
         /// <param name="data">待发送的字节数组</param>
-        void SendBigData(EPacketOwner owner, byte[] data);
+        Task SendBigData(EPacketOwner owner, byte[] data);
 
         /// <summary>
         /// 设定或更改数据线的工作模式

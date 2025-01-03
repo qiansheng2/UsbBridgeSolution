@@ -12,12 +12,12 @@ using Isc.Yft.UsbBridge.Utils;
 /// │ 4字节  │ 当前数据包位置索引   │ Index                      │
 /// │ 4字节  │ 数据包总字节数       │ TotalLength                │
 /// │ 4字节  │ 当前数据包实际字节数 │ ContentLength              │
-/// │ 16字节 │ 消息唯一ID           │ MessageId                  │
+/// │ 17字节 │ 带时间戳的消息唯一ID │ MessageId                  │
 /// │ 16字节 │ 备用(0x00填充）      │ Reserved                   │
-/// │ 969字节│ 可变长数据包内容     │ Content                    │
+/// │ 968字节│ 可变长数据包内容     │ Content                    │
 /// │ 4字节  │ CRC-32校验           │ Crc32                      │
 /// └────────────────┴──────────────┘
-/// 合计: 1+1+1+4+4+4+4+16+16备用+969（最大，可变长）+4 = 1024 字节
+/// 合计: 1+1+1+4+4+4+4+17+16备用+968（最大，可变长）+4 = 1024 字节
 /// </summary>
 /// 
 namespace Isc.Yft.UsbBridge.Models
@@ -60,9 +60,9 @@ namespace Isc.Yft.UsbBridge.Models
         public uint ContentLength { get; set; }
 
         /// <summary>
-        /// [16字节] 消息唯一ID（可用GUID或自定义16字节）
+        /// [17字节] 消息唯一ID
         /// </summary>
-        public byte[] MessageId { get; set; } = new byte[16];
+        public byte[] MessageId { get; set; } = new byte[17];
 
         /// <summary>
         /// [16字节] 备用（16字节）
@@ -253,8 +253,8 @@ namespace Isc.Yft.UsbBridge.Models
             if ( buf.Length != len )
                 throw new ArgumentException($"数据长度不正确, 当前包的数据长度有{buf.Length}字节，应该是{len}字节，因此无法正确转换为数据包！");
 
-            packet.MessageId = new byte[16];
-            Array.Copy(buf, offset, packet.MessageId, 0, 16);
+            packet.MessageId = new byte[17];
+            Array.Copy(buf, offset, packet.MessageId, 0, 17);
             offset += 16;
 
             packet.Reserved = new byte[16];

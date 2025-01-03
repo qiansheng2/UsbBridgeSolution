@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 
 namespace Isc.Yft.UsbBridge.Threading
 {
-    internal class Monitor
+    internal class DataMonitor
     {
         private readonly PlUsbBridgeManager _manager;
         private readonly CancellationToken _token;
         // 具体的对拷线控制实例
         private readonly IUsbCopyline _usbCopyline;
 
-        public Monitor(PlUsbBridgeManager manager, CancellationToken token, 
+        public DataMonitor(PlUsbBridgeManager manager, CancellationToken token, 
                            IUsbCopyline usbCopyline)
         {
             _manager = manager;
@@ -24,19 +24,18 @@ namespace Isc.Yft.UsbBridge.Threading
 
         public Task RunAsync()
         {
-            return Task.Run(() => RunLoop(), _token);
+            return RunLoopAsync(); 
         }
 
-        private void RunLoop()
+        private async Task RunLoopAsync()
         {
-            Console.WriteLine("[Monitor] 开始监控线程循环...");
             while (!_token.IsCancellationRequested)
             {
                 try
                 {
-                    // 获取监控线程开始许可
-                    PlUsbBridgeManager._monitorSemaphore.Wait(_token);
-                    Console.WriteLine("[Monitor] 开始监控状态...");
+                    // 1) 获得互斥锁，确保同一时间仅一个线程在执行
+                    await PlUsbBridgeManager._oneThreadAtATime.WaitAsync(_token);
+                    Console.WriteLine("[DataMonitor] 获得互斥锁, 开始监控状态...");
 
                     // 获取并保存对拷线最新状态
                     CopylineStatus status = _usbCopyline.ReadCopylineStatus(true);
@@ -44,29 +43,32 @@ namespace Isc.Yft.UsbBridge.Threading
 
                     if (status.Usable == ECopylineUsable.OK) {
                         USBMode mode = _manager.GetCurrentMode();
-                        Console.WriteLine($"[Monitor] 当前USB模式：{mode}.");
-                        // 模拟监控耗时
-                        Thread.Sleep(1000);
+                        Console.WriteLine($"[DataMonitor] 当前USB模式：{mode}.");
+
+                        // 在这里可以做更多监控或动态模式切换
+                        await Task.Delay(100, _token);
                     }
                     else
                     {
-                        Console.WriteLine($"[Monitor] USB设备不可用，无法监控其状态。");
+                        Console.WriteLine($"[DataMonitor] USB设备不可用，无法监控其状态。");
                     }
                 }
                 catch (OperationCanceledException)
                 {
-                    Console.WriteLine("[Monitor] 任务收到取消信号.");
+                    Console.WriteLine("[DataMonitor] 任务收到取消信号.");
+                    break;
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[Monitor] 发生预期外异常: {ex.Message}.");
+                    Console.WriteLine($"[DataMonitor] 发生预期外异常: {ex.Message}.");
+                    // 根据需要可决定是否 break 或继续循环
                 }
                 finally
                 {
-                    // 唤醒发送线程
-                    Console.WriteLine("[Monitor] 资源清理完毕.");
-                    PlUsbBridgeManager._senderSemaphore.Release();
-                    Thread.Sleep(Constants.THREAD_SWITCH_SLEEP_TIME); // 释放 CPU
+                    // 3) 释放互斥锁 + 稍作延时，避免空转
+                    Console.WriteLine("[DataMonitor] 释放锁, 资源清理完毕.");
+                    PlUsbBridgeManager._oneThreadAtATime.Release();
+                    await Task.Delay(Constants.THREAD_SWITCH_SLEEP_TIME, _token);
                 }
             }
         }

@@ -24,9 +24,9 @@ namespace Isc.Yft.UsbBridge.Models
             ack.TotalCount = 1;
             ack.Index = generalPacket.Index;
             ack.TotalLength = 0;
-            ack.ContentLength = 0;
+            ack.ContentLength = 200;        // 内容区长度
             ack.MessageId = generalPacket.MessageId;
-            ack.Content = new byte[0];
+            ack.Content = new byte[200];    // 内容：信息
             ack.AddCRC();
 
             return ack;

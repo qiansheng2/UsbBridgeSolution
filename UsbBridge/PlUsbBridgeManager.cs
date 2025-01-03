@@ -9,6 +9,7 @@ using Isc.Yft.UsbBridge.Models;
 using Isc.Yft.UsbBridge.Threading;
 using Isc.Yft.UsbBridge.Utils;
 using System.Linq;
+using System.Text;
 
 namespace Isc.Yft.UsbBridge
 {
@@ -19,15 +20,17 @@ namespace Isc.Yft.UsbBridge
         private Task _receiverTask;
         private Task _monitorTask;
 
-        private Threading.Monitor _dataMonitor;       // 监控线程
+        private DataMonitor _dataMonitor;       // 监控线程
         private DataSender _dataSender;         // 写入线程
         private DataReceiver _dataReceiver;     // 读取线程
 
-        public static SemaphoreSlim _monitorSemaphore = new SemaphoreSlim(1, 1);     // 初始允许监控线程运行
-        public static SemaphoreSlim _senderSemaphore = new SemaphoreSlim(0, 1);      // 写入线程等待
-        public static SemaphoreSlim _receiverSemaphore = new SemaphoreSlim(0, 1);    // 读取线程等待
+        // 单线程执行控制信号
+        internal static SemaphoreSlim _oneThreadAtATime = new SemaphoreSlim(1, 1);
+        // ACK 事件
+        internal static ManualResetEventSlim _ackEvent = new ManualResetEventSlim(false);
 
-        private BlockingCollection<Packet[]> _sendQueue;
+
+        private BlockingCollection<SendRequest> _sendQueue;
         private CancellationTokenSource _cts;
 
         // 用于记录当前USB工作模式
@@ -38,7 +41,7 @@ namespace Isc.Yft.UsbBridge
 
         public PlUsbBridgeManager()
         {
-            _sendQueue = new BlockingCollection<Packet[]>();
+            _sendQueue = new BlockingCollection<SendRequest>();
             _cts = new CancellationTokenSource();
 
             // 这里决定用哪个芯片控制类
@@ -73,7 +76,7 @@ namespace Isc.Yft.UsbBridge
                 // 实例化三个后台角色，并将 _syncUSBLock 传入
                 _dataSender = new DataSender(_sendQueue, _cts.Token, _usbCopyline);
                 _dataReceiver = new DataReceiver(_cts.Token, _usbCopyline);
-                _dataMonitor = new Threading.Monitor(this, _cts.Token, _usbCopyline);
+                _dataMonitor = new Threading.DataMonitor(this, _cts.Token, _usbCopyline);
 
                 // 运行三个任务
                 _senderTask = _dataSender.RunAsync();
@@ -104,7 +107,14 @@ namespace Isc.Yft.UsbBridge
             {
                 foreach (var ex in aex.Flatten().InnerExceptions)
                 {
-                    Console.WriteLine($"[Main] 任务运行异常: {ex.Message}");
+                    if (ex is OperationCanceledException)
+                    {
+                        Console.WriteLine($"[Main] 任务取消: {ex.Message}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[Main] 任务运行异常: {ex.Message}");
+                    }
                 }
             }
             catch (Exception ex)
@@ -114,7 +124,7 @@ namespace Isc.Yft.UsbBridge
             finally
             {
                 _sendQueue.Dispose();
-                _sendQueue = new BlockingCollection<Packet[]>();
+                _sendQueue = new BlockingCollection<SendRequest>();
 
                 _cts.Dispose();
                 _cts = new CancellationTokenSource();
@@ -127,7 +137,7 @@ namespace Isc.Yft.UsbBridge
             }
         }
 
-        public void SendBigData(EPacketOwner owner, byte[] data)
+        public async Task SendBigData(EPacketOwner owner, byte[] data)
         {
             if (!_cts.IsCancellationRequested)
             {
@@ -140,7 +150,7 @@ namespace Isc.Yft.UsbBridge
 
                     // 附加2个包：HEAD包、TAIL包
                     int totalCount = 2 + (int)Math.Ceiling(totalLen / (double)chunkSize);
-                    byte[] messageId = Guid.NewGuid().ToByteArray(); // 唯一ID
+                    byte[] messageId = Encoding.ASCII.GetBytes(TimeStampIdUtil.GenerateId()); // 带时间戳的13+4位唯一ID
 
                     // 组装HEAD包
                     byte[] reservedData = new byte[16];
@@ -156,7 +166,7 @@ namespace Isc.Yft.UsbBridge
                         TotalLength = (uint)data.Length,
                         ContentLength = (uint)0
                     };
-                    Array.Copy(messageId, 0, headPacket.MessageId, 0, 16);
+                    Array.Copy(messageId, 0, headPacket.MessageId, 0, 17);
                     Array.Copy(reservedData, 0, headPacket.Reserved, 0, 16);
                     headPacket.AddCRC();
                     // 准备发送头数据
@@ -217,12 +227,52 @@ namespace Isc.Yft.UsbBridge
                     allPackets.Add(tailPacket);
 
                     // 待发送数据作为一个整体，一次性全部放入发送队列
-                    _sendQueue.Add(allPackets.Cast<Packet>().ToArray());
+                    await SendAllPacketsAsync(allPackets.ToArray());
+
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"[Main] 添加数据到发送队列异常: {ex.Message}");
                 }
+            }
+        }
+
+        /// <summary>
+        /// 发送数据
+        /// </summary>
+        /// <param name="allPackets"></param>
+        /// <returns>任务</returns>
+        public async Task SendAllPacketsAsync(Packet[] allPackets)
+        {
+            // 1) 构造发送请求
+            SendRequest request = new SendRequest(allPackets);
+
+            // 2) 扔到队列
+            _sendQueue.Add(request);
+
+            try
+            {
+                // 3) 等待发送线程的处理结果
+                bool success = await request.Tcs.Task;
+
+                if (!success)
+                {
+                    // 说明发送线程那边用 SetResult(false) 代表失败
+                    // 也可能用 SetException(...) -> 走catch
+                    Console.WriteLine("[Main] 本次发送失败...");
+                }
+                else
+                {
+                    Console.WriteLine("[Main] 发送成功，并成功读取到ACK!");
+                }
+            }
+            catch (TimeoutException tex)
+            {
+                Console.WriteLine($"[Main] 发送超时: {tex.Message}...");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Main] 数据发送中发生了其他异常: {ex.Message}...");
             }
         }
 
