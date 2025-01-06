@@ -12,7 +12,7 @@ namespace Isc.Yft.UsbBridge.Models
         private readonly object _lock = new object();
 
         // 对拷线设备是否可用（自动计算）
-        public ECopylineUsable Usable
+        public ECopylineStatus _realtimeStatus;
         {
             get
             {

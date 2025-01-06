@@ -10,11 +10,14 @@ namespace Isc.Yft.UsbBridge.Threading
     {
         private readonly CancellationToken _token;
 
+        // 定义事件，用于通知其他线程接收到的 ACK
+        public event Action<Packet> AckReceived;
+
         // 具体的对拷线控制实例
         private readonly IUsbCopyline _usbCopyline;
         private bool _firstRun = true;
 
-        public DataReceiver(CancellationToken token, IUsbCopyline usbCopyline)
+        public DataReceiver(SendRequest sendRequest, CancellationToken token, IUsbCopyline usbCopyline)
         {
             _token = token;
             _usbCopyline = usbCopyline;
@@ -67,11 +70,12 @@ namespace Isc.Yft.UsbBridge.Threading
                                 if (packet != null)
                                 {
                                     Console.WriteLine($"[DataReceiver] 解析到包: Type={packet.Type}, Index={packet.Index}/{packet.TotalCount}, Length={packet.ContentLength}");
-
                                     if (packet.Type == EPacketType.ACK)
                                     {
-                                        // 通知发送线程
-                                        Console.WriteLine("[DataReceiver] 收到ACK, 即将Set事件唤醒DataSender");
+                                        // 触发事件，通知发送线程
+                                        Console.WriteLine("[DataReceiver] 收到ACK, 即将把Ack包交给发送线程处理。");
+                                        AckReceived?.Invoke(packet);
+                                        Console.WriteLine("[DataReceiver] 收到ACK, 即将唤醒发送线程。");
                                         PlUsbBridgeManager._ackEvent.Set();
                                     }
                                     else

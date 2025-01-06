@@ -53,9 +53,9 @@ namespace Isc.Yft.UsbBridge.Models
     public enum ECopylineUsable: byte
     {
         // 对拷线是可用状态
-        OK = 0,
+        ONLINE = 0,
         // 对拷线不可用
-        NG = 1
+        OFFLINE = 1
     }
 
 

@@ -9,13 +9,13 @@ namespace Isc.Yft.UsbBridge.Models
     internal class Constants
     {
         #region 系统运行常量
-        public const int THREAD_SWITCH_SLEEP_TIME = 1000;   // 线程切换等待常量
-        public const int ACK_TIMEOUT_MS = 10000;            // 发送数据后，等待ack返回的时间
+        public const int THREAD_SWITCH_SLEEP_TIME = 4000;   // 线程切换等待常量
+        public const int ACK_TIMEOUT_MS = 5000;             // 发送数据后，等待ack返回的时间
         #endregion
 
         #region 数据包常量
         public const int VER1 = 1;
-        public const int ContentMaxLength = 968;
+        public const int CONTENT_MAX_SIZE = 968;
         public const int PACKET_MIN_SIZE = 56;
         public const int PACKET_MAX_SIZE = 1024;
         #endregion

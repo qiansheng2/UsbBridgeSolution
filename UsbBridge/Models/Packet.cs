@@ -126,8 +126,8 @@ namespace Isc.Yft.UsbBridge.Models
             if (content == null)
                 throw new ArgumentOutOfRangeException("content数据为空！");
 
-            if (contentLength > Constants.ContentMaxLength)
-                throw new ArgumentOutOfRangeException($"currentPacketLength大于长度上限({Constants.ContentMaxLength})！");
+            if (contentLength > Constants.CONTENT_MAX_SIZE)
+                throw new ArgumentOutOfRangeException($"currentPacketLength大于长度上限({Constants.CONTENT_MAX_SIZE})！");
 
             // 根据 contentLength 分配本地 Content
             this.Content = new byte[contentLength];

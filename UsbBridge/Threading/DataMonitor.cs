@@ -1,9 +1,11 @@
 ﻿using Isc.Yft.UsbBridge.Interfaces;
 using Isc.Yft.UsbBridge.Models;
+using Isc.Yft.UsbBridge.Exceptions;
 using System;
 using System.ServiceModel;
 using System.Threading;
 using System.Threading.Tasks;
+using Isc.Yft.UsbBridge.Devices;
 
 namespace Isc.Yft.UsbBridge.Threading
 {
@@ -27,7 +29,7 @@ namespace Isc.Yft.UsbBridge.Threading
             return RunLoopAsync(); 
         }
 
-        private async Task RunLoopAsync()
+        public async Task RunLoopAsync()
         {
             while (!_token.IsCancellationRequested)
             {
@@ -37,16 +39,18 @@ namespace Isc.Yft.UsbBridge.Threading
                     await PlUsbBridgeManager._oneThreadAtATime.WaitAsync(_token);
                     Console.WriteLine("[DataMonitor] 获得互斥锁, 开始监控状态...");
 
+                    // 获取拷贝线的硬件信息
+                    _usbCopyline.ReadCopylineInfo(true);
+
                     // 获取并保存对拷线最新状态
                     CopylineStatus status = _usbCopyline.ReadCopylineStatus(true);
-                    _usbCopyline.SetCopylineStatus(status);
 
                     if (status.Usable == ECopylineUsable.OK) {
+                        // 打开usb对拷线设备
+                        _usbCopyline.OpenDevice();
+
                         USBMode mode = _manager.GetCurrentMode();
                         Console.WriteLine($"[DataMonitor] 当前USB模式：{mode}.");
-
-                        // 在这里可以做更多监控或动态模式切换
-                        await Task.Delay(100, _token);
                     }
                     else
                     {
@@ -60,7 +64,7 @@ namespace Isc.Yft.UsbBridge.Threading
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[DataMonitor] 发生预期外异常: {ex.Message}.");
+                    Console.WriteLine($"[DataMonitor] 发生预期外异常: {ex.Message}");
                     // 根据需要可决定是否 break 或继续循环
                 }
                 finally

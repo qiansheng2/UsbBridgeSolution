@@ -1,14 +1,15 @@
-﻿using System;
-using System.Threading;
-using Isc.Yft.UsbBridge;
-using Isc.Yft.UsbBridge.Interfaces;
+﻿using Isc.Yft.UsbBridge.Interfaces;
 using Isc.Yft.UsbBridge.Models;
+using Isc.Yft.UsbBridge;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Isc.Yft.UsbBridgeTest
 {
     internal class Test
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             Console.WriteLine("=== USB Bridge Test Program ===");
 
@@ -23,10 +24,29 @@ namespace Isc.Yft.UsbBridgeTest
 
                 // 发送一些测试数据
                 byte[] dummyData = { 0x01, 0x02, 0x03, 0x04, 0x05 };
-                bridge.SendBigData(EPacketOwner.OUTERNET, dummyData);
+                try
+                {
+                    // 等待 SendBigData 完成并获取返回值
+                    Result<string> result = bridge.SendBigData(EPacketOwner.OUTERNET, dummyData);
 
-                // 等待若干秒，让接收 & 监控 任务输出一些日志
-                Thread.Sleep(8000);
+                    // 判断返回结果
+                    if (result.IsSuccess)
+                    {
+                        Console.WriteLine($"[Main] SendBigData 执行成功，返回数据: {result.Data}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[Main] SendBigData 执行失败，错误信息: [{result.ErrorCode}] {result.ErrorMessage}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // 捕获异常
+                    Console.WriteLine($"[Main] SendBigData 执行时发生异常: {ex.Message}");
+                }
+
+                // 等待若干秒，让接收 & 监控任务输出一些日志
+                await Task.Delay(40000);
 
                 // 切换模式
                 USBMode mode = new USBMode(EUSBPosition.OUTSIDE, EUSBDirection.UPLOAD);
@@ -34,7 +54,7 @@ namespace Isc.Yft.UsbBridgeTest
                 Console.WriteLine($"[Main] 模式已切换为: [{mode}].");
 
                 // 再等待一段时间
-                Thread.Sleep(8000);
+                await Task.Delay(40000);
 
                 // 主程序结束前，停止桥接
                 Console.WriteLine("[Main] 即将停止桥接...");

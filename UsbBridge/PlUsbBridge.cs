@@ -33,9 +33,10 @@ namespace Isc.Yft.UsbBridge
             _manager.StopThreads();
         }
 
-        public async Task SendBigData(EPacketOwner owner, byte[] data)
+        public Result<string> SendBigData(EPacketOwner owner, byte[] data)
         {
-            await _manager.SendBigData(owner, data);
+            Result<string> ret = _manager.SendBigData(owner, data);
+            return ret;
         }
 
         public void SetMode(USBMode mode)

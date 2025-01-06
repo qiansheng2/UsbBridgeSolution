@@ -10,7 +10,7 @@ using System.Collections.Generic;
 
 namespace Isc.Yft.UsbBridge.Devices
 {
-    internal abstract class PIUsbCopyline : IUsbCopyline
+    internal abstract class PICopyline : ICopyline
     {
         // ========== [1] 导入 libusb-1.0 的函数  ==========
         /// <summary>
@@ -186,8 +186,6 @@ namespace Isc.Yft.UsbBridge.Devices
         // ========== [2] 内部字段 ==========
         protected IntPtr _context = IntPtr.Zero;
         protected IntPtr _deviceHandle = IntPtr.Zero;
-        protected CopylineInfo _copylineInfo = new CopylineInfo();
-        protected CopylineStatus _copylineStatus = new CopylineStatus();
 
         // VendorID / ProductID (需要根据实际对拷线数据覆盖)
         protected virtual string USB_NAME { get; set; } = "";
@@ -198,16 +196,6 @@ namespace Isc.Yft.UsbBridge.Devices
         public abstract int WriteDataToDevice(byte[] data);
 
         public abstract int ReadDataFromDevice(byte[] buffer);
-
-        public void SetCopylineInfo(CopylineInfo copylineInfo)
-        {
-            _copylineInfo = copylineInfo;
-        }
-
-        public void SetCopylineStatus(CopylineStatus copylineStatus)
-        {
-            _copylineStatus = copylineStatus;
-        }
 
         public void Initialize()
         {
