@@ -12,30 +12,29 @@ namespace Isc.Yft.UsbBridge.Interfaces
     /// </summary>
     public interface ICopyline : IDisposable
     {
-        CopylineInfo CopylineInfo { get; }
+        CopylineInfo Info { get; }
 
-        CopylineStatus CopylineStatus { get; }
+        CopylineStatus Status { get; }
 
         /// <summary>
         /// libusb_init 初始化
         /// </summary>
         void Initialize();
-        
+
+        /// <summary>
+        /// 从设备读取设备信息，更新Info
+        /// </summary>
+        void UpdateCopylineInfo();
+
+        /// <summary>
+        /// 从设备读取当前工作状态，更新Status
+        /// </summary>
+        void UpdateCopylineStatus();
+
         /// <summary>
         /// 打开设备,声明端口
         /// </summary>
         void OpenCopyline();
-
-        /// <summary>
-        /// 调用libusb，从拷贝线中获取拷贝线当前的物理信息，或读取上次取得的物理信息
-        /// </summary>
-        /// <returns>获取信息成功与否</returns>
-        bool GetCopylineDeviceInfo();
-
-        /// <summary>
-        /// 从拷贝线中获取拷贝线当前的实时运行状态
-        /// </summary>
-        CopylineStatus GetCopylineRealtimeStatus();
 
         /// <summary>
         /// 写数据 (调用 libusb_bulk_transfer 向设备发送数据)

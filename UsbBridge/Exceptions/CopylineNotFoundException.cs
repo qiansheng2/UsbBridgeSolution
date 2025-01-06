@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Isc.Yft.UsbBridge.Exceptions
 {
-    internal class UsbCopylineNotFoundException: Exception
+    internal class CopylineNotFoundException: Exception
     {
-        public UsbCopylineNotFoundException(string message) : base(message) { }
+        public CopylineNotFoundException(string message) : base(message) { }
     }
 }

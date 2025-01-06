@@ -11,26 +11,86 @@ namespace Isc.Yft.UsbBridge.Models
         // 锁对象，用于同步
         private readonly object _lock = new object();
 
-        // 是否进行了初始化
-        private bool _deviceExist = false;
-        public bool DeviceExist
+        // 是否读取过硬件设备
+        private bool _fromDevice = false;
+        public bool FromDevice
         {
             get
             {
                 lock (_lock)
                 {
-                    return _deviceExist;
+                    return _fromDevice;
                 }
             }
             set
             {
                 lock (_lock)
                 {
-                    _deviceExist = value;
+                    _fromDevice = value;
                 }
             }
         }
 
+        // Name / VendorID / ProductID (需要根据实际对拷线数据覆盖)
+        // 拷贝线名称
+        private String _name;
+        public String Name
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _name;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    _name = value;
+                }
+            }
+        }
+
+        // VenderID
+        private ushort _vid = 0x0000;
+        public ushort Vid
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _vid;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    _vid = value;
+                }
+            }
+        }
+
+        // ProductID
+        private ushort _pid = 0x0000;
+        public ushort Pid
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _pid;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    _pid = value;
+                }
+            }
+        }
         // USB设备控制信息
         private byte _bulkInAddress;
         public byte BulkInAddress
@@ -94,7 +154,8 @@ namespace Isc.Yft.UsbBridge.Models
         {
             lock (_lock) // 加锁，确保多个变量读取时的一致性
             {
-                return $"设备存在 = [{DeviceExist}], 地址 = [In: BulkInAddress={BulkInAddress}, Out:BulkOutAddress={BulkOutAddress}], " +
+                return $"名称/VID/PID = [{Name}/{Pid}/{Vid}] 从设备获取 = [{FromDevice}], " +
+                       $"地址 = [In: BulkInAddress={BulkInAddress}, Out:BulkOutAddress={BulkOutAddress}], " +
                        $"接口番号 = [{BulkInterfaceNo}]";
             }
         }

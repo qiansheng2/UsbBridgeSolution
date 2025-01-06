@@ -14,9 +14,9 @@ namespace Isc.Yft.UsbBridge.Threading
         private readonly CancellationToken _token;
 
         // 具体的对拷线控制实例
-        private readonly IUsbCopyline _usbCopyline;
+        private readonly ICopyline _usbCopyline;
 
-        public SynDataSender(SendRequest request, CancellationToken token, IUsbCopyline usbCopyline)
+        public SynDataSender(SendRequest request, CancellationToken token, ICopyline usbCopyline)
         {
             _request = request;
             _token = token;
@@ -30,8 +30,8 @@ namespace Isc.Yft.UsbBridge.Threading
             try
             {
                 // (1) 检查拷贝线状态是否可用
-                CopylineStatus status = _usbCopyline.ReadCopylineStatus(false);
-                if (status.Usable == ECopylineUsable.OK)
+                _usbCopyline.UpdateCopylineStatus();
+                if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.ONLINE)
                 {
                     // 看是否有待发送数据
                     if (_request == null)

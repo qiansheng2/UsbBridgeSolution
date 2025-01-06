@@ -14,10 +14,9 @@ namespace Isc.Yft.UsbBridge.Threading
         public event Action<Packet> AckReceived;
 
         // 具体的对拷线控制实例
-        private readonly IUsbCopyline _usbCopyline;
-        private bool _firstRun = true;
+        private readonly ICopyline _usbCopyline;
 
-        public DataReceiver(SendRequest sendRequest, CancellationToken token, IUsbCopyline usbCopyline)
+        public DataReceiver(SendRequest sendRequest, CancellationToken token, ICopyline usbCopyline)
         {
             _token = token;
             _usbCopyline = usbCopyline;
@@ -41,16 +40,9 @@ namespace Isc.Yft.UsbBridge.Threading
                     Console.WriteLine("[DataReceiver] 获得互斥锁, 开始接收数据...");
 
                     // 2) 检查USB对拷线状态
-                    CopylineStatus status = _usbCopyline.ReadCopylineStatus(false);
-                    if (status.Usable == ECopylineUsable.OK)
+                    _usbCopyline.UpdateCopylineStatus();
+                    if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.ONLINE)
                     {
-                        if (_firstRun)
-                        {
-                            _firstRun = false;
-                            // flush操作后，再从缓冲区正式读取数据
-                            FlushOnce();
-                        }
-
                         // 3) 正式读数据
                         byte[] buffer = new byte[Constants.PACKET_MAX_SIZE]; // 缓冲
                         Array.Clear(buffer, 0, buffer.Length); // 将 buffer 的所有元素设置为 0x00

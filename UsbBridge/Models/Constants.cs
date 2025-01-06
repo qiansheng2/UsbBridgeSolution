@@ -9,8 +9,8 @@ namespace Isc.Yft.UsbBridge.Models
     internal class Constants
     {
         #region 系统运行常量
-        public const int THREAD_SWITCH_SLEEP_TIME = 4000;   // 线程切换等待常量
-        public const int ACK_TIMEOUT_MS = 5000;             // 发送数据后，等待ack返回的时间
+        public const int THREAD_SWITCH_SLEEP_TIME = 4000;           // 线程切换等待常量
+        public const int ACK_TIMEOUT_MS = 5000;                     // 发送数据后，等待ack返回的时间
         #endregion
 
         #region 数据包常量
@@ -27,6 +27,7 @@ namespace Isc.Yft.UsbBridge.Models
         #endregion
 
         #region 设备常量
+        public const int BULK_TIMEOUT_MS = 2000;                    // USB设备批量传输时的超时时间
         #endregion
 
         #region 消息常量

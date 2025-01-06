@@ -30,7 +30,7 @@ namespace Isc.Yft.UsbBridge
 
         public void Stop()
         {
-            _manager.StopThreads();
+            _manager.Dispose();
         }
 
         public Result<string> SendBigData(EPacketOwner owner, byte[] data)

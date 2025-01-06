@@ -14,10 +14,10 @@ namespace Isc.Yft.UsbBridge.Threading
         private readonly PlUsbBridgeManager _manager;
         private readonly CancellationToken _token;
         // 具体的对拷线控制实例
-        private readonly IUsbCopyline _usbCopyline;
+        private readonly ICopyline _usbCopyline;
 
         public DataMonitor(PlUsbBridgeManager manager, CancellationToken token, 
-                           IUsbCopyline usbCopyline)
+                           ICopyline usbCopyline)
         {
             _manager = manager;
             _token = token;
@@ -39,15 +39,11 @@ namespace Isc.Yft.UsbBridge.Threading
                     await PlUsbBridgeManager._oneThreadAtATime.WaitAsync(_token);
                     Console.WriteLine("[DataMonitor] 获得互斥锁, 开始监控状态...");
 
-                    // 获取拷贝线的硬件信息
-                    _usbCopyline.ReadCopylineInfo(true);
-
-                    // 获取并保存对拷线最新状态
-                    CopylineStatus status = _usbCopyline.ReadCopylineStatus(true);
-
-                    if (status.Usable == ECopylineUsable.OK) {
+                    // 获取拷贝线的最新状态信息
+                    _usbCopyline.UpdateCopylineStatus();
+                    if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.OFFLINE) {
                         // 打开usb对拷线设备
-                        _usbCopyline.OpenDevice();
+                        _usbCopyline.OpenCopyline();
 
                         USBMode mode = _manager.GetCurrentMode();
                         Console.WriteLine($"[DataMonitor] 当前USB模式：{mode}.");

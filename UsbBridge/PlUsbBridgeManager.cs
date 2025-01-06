@@ -12,8 +12,10 @@ using System.Text;
 
 namespace Isc.Yft.UsbBridge
 {
-    internal class PlUsbBridgeManager
+    internal class PlUsbBridgeManager:IDisposable
     {
+        private bool _disposed = false;
+
         // 三个后台任务引用
         private Task _receiverTask;
         private Task _monitorTask;
@@ -36,7 +38,7 @@ namespace Isc.Yft.UsbBridge
         private USBMode _currentMode = new USBMode(EUSBPosition.OUTSIDE, EUSBDirection.UPLOAD);
 
         // 具体的对拷线控制实例 (PL25A1,PL27A1等)
-        private readonly IUsbCopyline _usbCopyline;
+        private readonly ICopyline _usbCopyline;
 
         public PlUsbBridgeManager()
         {
@@ -47,24 +49,50 @@ namespace Isc.Yft.UsbBridge
             // _usbCopyline = new Pl25A1UsbCopyline();
             _usbCopyline = new Pl27A7UsbCopyline();
 
-            try
+            // 先初始化 & 打开设备
+            _usbCopyline.Initialize();
+            _usbCopyline.OpenCopyline();
+            if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.ONLINE)
             {
-                // 先初始化 & 打开设备
-                _usbCopyline.Initialize();
-                _usbCopyline.OpenDevice();
-                CopylineStatus info = _usbCopyline.ReadCopylineStatus(true);
-                if (info.Usable == ECopylineUsable.OK)
-                {
-                    Console.WriteLine($"[Main] USB设备已打开, 且设备状态为可用!");
-                }
-                else
-                {
-                    Console.WriteLine($"[Main] USB设备已打开, 但设备不可用: {info}");
-                }
+                Console.WriteLine($"[Main] USB设备已打开, 且设备状态为ONLINE!");
             }
-            catch
+            else
             {
-                Console.WriteLine($"[Main] 警告: USB设备打开失败, 后续无法通信!");
+                Console.WriteLine($"[Main] USB设备OFFLINE: {_usbCopyline.Status}");
+            }
+        }
+
+        // 析构函数
+        ~PlUsbBridgeManager()
+        {
+            Dispose(false); // 仅清理非托管资源
+        }
+
+        public void Dispose()
+        {
+            Dispose(true); // 清理托管和非托管资源
+            GC.SuppressFinalize(this); // 禁止调用析构函数
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    // 清理托管资源
+                    StopThreads();
+
+                    _backend_cts.Dispose();
+                    _send_data_cts.Dispose();
+                    _usbCopyline.Dispose();
+                    Console.WriteLine($"[Main] 调用了Dispose(),清理了类中的非托管资源。");
+                }
+
+                // 清理非托管资源（当前没有直接持有非托管资源）
+                // 如果有非托管资源，请在这里释放
+
+                _disposed = true;
             }
         }
 
@@ -103,7 +131,6 @@ namespace Isc.Yft.UsbBridge
 
                 // 等待两个个后台任务结束
                 Task.WaitAll(_receiverTask, _monitorTask);
-
                 Console.WriteLine("[Main] 所有后台任务已退出。");
             }
             catch (AggregateException aex)
@@ -124,21 +151,7 @@ namespace Isc.Yft.UsbBridge
             {
                 Console.WriteLine($"[Main] StopThreads 异常: {ex.Message}");
             }
-            finally
-            {
-
-                _backend_cts.Dispose();
-                _backend_cts = new CancellationTokenSource();
-
-                _send_data_cts.Dispose();
-                _send_data_cts = new CancellationTokenSource();
-
-                // 最后关闭对拷线
-                _usbCopyline.CloseDevice();
-                _usbCopyline.Exit();
-
-                Console.WriteLine("[Main] StopThreads 已完成清理。");
-            }
+            Console.WriteLine("[Main] StopThreads 已完成清理。");
         }
 
         public Result<string> SendBigData(EPacketOwner owner, byte[] data)

@@ -12,7 +12,7 @@ namespace Isc.Yft.UsbBridge.Models
         private readonly object _lock = new object();
 
         // 对拷线设备是否可用（自动计算）
-        public ECopylineStatus _realtimeStatus;
+        public ECopylineStatus RealtimeStatus
         {
             get
             {
@@ -20,11 +20,11 @@ namespace Isc.Yft.UsbBridge.Models
                 {
                     if (DeviceStatus.LocalAttached && DeviceStatus.RemoteAttached)
                     {
-                        return ECopylineUsable.OK;
+                        return ECopylineStatus.ONLINE;
                     }
                     else
                     {
-                        return ECopylineUsable.NG;
+                        return ECopylineStatus.OFFLINE;
                     }
                 }
             }
@@ -50,12 +50,21 @@ namespace Isc.Yft.UsbBridge.Models
             }
         }
 
+        // 清理，回到初始状态
+        public void Clear()
+        {
+            lock (_lock)
+            {
+                DeviceStatus = new SDEV_STATUS();
+            }
+        }
+
         // 重写 ToString 方法
         public override string ToString()
         {
             lock (_lock) // 确保在多线程下访问 Usable 和 DeviceStatus 的一致性
             {
-                return $"设备是否可用 = [{Usable}], 设备状态详细 = [{DeviceStatus}]";
+                return $"设备是否可用 = [{RealtimeStatus}], 设备状态详细 = [{DeviceStatus}]";
             }
         }
     }

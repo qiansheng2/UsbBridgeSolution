@@ -7,72 +7,76 @@ using Isc.Yft.UsbBridge.Utils;
 
 namespace Isc.Yft.UsbBridge.Devices
 {
-    internal class Pl25A1UsbCopyline : PIUsbCopyline
+    internal sealed class Pl25A1UsbCopyline : PICopyline
     {
+        // ========== 覆盖PICopyline virtual 属性 ==========
+        public override CopylineInfo Info { get; }
 
-        // ========== [2] 内部字段 ==========
+        // ========== 构造函数 ==========
+        public Pl25A1UsbCopyline()
+        {
+            Info = new CopylineInfo
+            {
+                Name = "PL25A1",
+                Vid = 0x067B,
+                Pid = 0x25A1,
+                BulkInterfaceNo = 0,
+                BulkInAddress = 0x00,
+                BulkOutAddress = 0x00
+            };
+        }
 
-        // 示例 VendorID / ProductID (需要根据实际对拷线确认)
-        protected override string USB_NAME { get; set; } = "PL25A1";
-        protected override ushort USB_VID { get; set; } = 0x067B;
-        protected override ushort USB_PID { get; set; } = 0x25A1;
-
-        // 根据设备描述符，EP2 OUT = 0x02, EP1 IN = 0x81
-        private const byte BULK_OUT_ENDPOINT = 0x02;
-        private const byte BULK_IN_ENDPOINT = 0x81;
-        private const uint TIMEOUT_MS = 3000;
-
-        // ========== [3] 实现 IUsbCopyline 接口 ==========
+        // ========== 实现 IUsbCopyline 接口 ==========
 
         public override int WriteDataToDevice(byte[] data)
         {
-            if (_deviceHandle == IntPtr.Zero)
+            if (_deviceHandle.IsInvalid)
             {
-                Console.WriteLine($"[{USB_NAME}] 设备尚未打开，无法写入数据.");
+                Console.WriteLine($"[{Info.Name}] 设备尚未打开，无法写入数据.");
                 return 0;
             }
 
-            int ret = libusb_bulk_transfer(
-                _deviceHandle,
-                BULK_OUT_ENDPOINT,
+            int ret = LibusbInterop.libusb_bulk_transfer(
+                _deviceHandle.DangerousGetHandle(),
+                Info.BulkOutAddress,
                 data,
                 data.Length,
                 out int transferred,
-                TIMEOUT_MS);
+                Constants.BULK_TIMEOUT_MS);
 
             if (ret < 0)
             {
-                Console.WriteLine($"[{USB_NAME}] 写数据失败，libusb_bulk_transfer 返回: {ret}");
+                Console.WriteLine($"[{Info.Name}] 写数据失败，libusb_bulk_transfer 返回: {ret}");
                 return 0;
             }
 
-            Console.WriteLine($"[{USB_NAME}] 已写入 {transferred} 字节.");
+            Console.WriteLine($"[{Info.Name}] 已写入 {transferred} 字节.");
             return transferred;
         }
 
         public override int ReadDataFromDevice(byte[] buffer)
         {
-            if (_deviceHandle == IntPtr.Zero)
+            if (_deviceHandle.IsInvalid)
             {
-                Console.WriteLine($"[{USB_NAME}] 设备尚未打开，无法读取数据.");
+                Console.WriteLine($"[{Info.Name}] 设备尚未打开，无法读取数据.");
                 return 0;
             }
 
-            int ret = libusb_bulk_transfer(
-                _deviceHandle,
-                BULK_IN_ENDPOINT,
+            int ret = LibusbInterop.libusb_bulk_transfer(
+                _deviceHandle.DangerousGetHandle(),
+                Info.BulkInAddress,
                 buffer,
                 buffer.Length,
                 out int transferred,
-                TIMEOUT_MS);
+                Constants.BULK_TIMEOUT_MS);
 
             if (ret < 0)
             {
-                Console.WriteLine($"[{USB_NAME}] 读数据失败，libusb_bulk_transfer 返回: {ret}");
+                Console.WriteLine($"[{Info.Name}] 读数据失败，libusb_bulk_transfer 返回: {ret}");
                 return 0;
             }
 
-            Console.WriteLine($"[{USB_NAME}] 已读取 {transferred} 字节.");
+            Console.WriteLine($"[{Info.Name}] 已读取 {transferred} 字节.");
             return transferred;
         }
     }

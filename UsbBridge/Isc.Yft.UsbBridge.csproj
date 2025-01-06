@@ -74,17 +74,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Devices\PICopyline.cs" />
-    <Compile Include="Devices\PIUsbCopyline.cs" />
     <Compile Include="Devices\Pl27A7UsbCopyline.cs" />
     <Compile Include="Devices\Pl25A1UsbCopyline.cs" />
-    <Compile Include="Exceptions\UsbCopylineNotFoundException.cs" />
+    <Compile Include="Exceptions\CopylineNotFoundException.cs" />
     <Compile Include="Exceptions\PacketMismatchException.cs" />
     <Compile Include="Interfaces\ICopyline.cs" />
-    <Compile Include="Interfaces\IUsbCopyline.cs" />
     <Compile Include="Interfaces\IUsbBridge.cs" />
     <Compile Include="Models\CopylineHardware.cs" />
     <Compile Include="Models\CopylineStatus.cs" />
     <Compile Include="Models\CopylineInfo.cs" />
+    <Compile Include="Models\LibusbDeviceSafeHandle.cs" />
+    <Compile Include="Models\LibusbInterop.cs" />
+    <Compile Include="Models\LibusbContextSafeHandle.cs" />
     <Compile Include="Models\Result.cs" />
     <Compile Include="Models\SendRequest.cs" />
     <Compile Include="Models\Structs.cs" />
