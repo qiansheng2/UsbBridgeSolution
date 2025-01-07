@@ -29,6 +29,7 @@ public sealed class LibUsbContextSafeHandle : SafeHandle
         {
             // 调用 libusb_exit(ctx)
             LibusbInterop.libusb_exit(handle);
+            handle = IntPtr.Zero;
         }
         return true;
     }

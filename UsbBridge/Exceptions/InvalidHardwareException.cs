@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace Isc.Yft.UsbBridge.Exceptions
 {
-    public class CopylineNotFoundException: Exception
+    public class InvalidHardwareException : Exception
     {
-        public CopylineNotFoundException(string message) : base(message) { }
+        public InvalidHardwareException(string message) : base(message) { }
     }
 }
+

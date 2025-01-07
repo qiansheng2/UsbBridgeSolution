@@ -3,6 +3,7 @@ using Isc.Yft.UsbBridge.Models;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Isc.Yft.UsbBridge.Exceptions;
 
 namespace Isc.Yft.UsbBridge.Threading
 {
@@ -15,6 +16,9 @@ namespace Isc.Yft.UsbBridge.Threading
 
         // 具体的对拷线控制实例
         private readonly ICopyline _usbCopyline;
+
+        // 当监控出现致命错误时触发
+        public event EventHandler<InvalidHardwareException> FatalErrorOccurred;
 
         public DataReceiver(SendRequest sendRequest, CancellationToken token, ICopyline usbCopyline)
         {
@@ -37,9 +41,15 @@ namespace Isc.Yft.UsbBridge.Threading
 
                     // 1) 先请求单线程互斥锁，保证此时只有本线程在工作
                     await PlUsbBridgeManager._oneThreadAtATime.WaitAsync(_token);
-                    Console.WriteLine("[DataReceiver] 获得互斥锁, 开始接收数据...");
+                    Console.WriteLine("[DataReceiver] -----------------R Start-----------------");
+                    if (_token.IsCancellationRequested)
+                    {
+                        Console.WriteLine("取消信号在拿到锁后立即生效，不执行任何业务操作。");
+                        break;
+                    }
 
                     // 2) 检查USB对拷线状态
+                    _usbCopyline.OpenCopyline();
                     _usbCopyline.UpdateCopylineStatus();
                     if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.ONLINE)
                     {
@@ -101,15 +111,21 @@ namespace Isc.Yft.UsbBridge.Threading
                 {
                     Console.WriteLine($"[DataReceiver] 任务收到取消信号.");
                 }
+                catch (InvalidHardwareException hex)
+                {
+                    Console.WriteLine($"[DataReceiver] 发生致命错误,接收线程退出...{hex.Message}");
+                    // 触发事件，通知外部
+                    FatalErrorOccurred?.Invoke(this, hex);
+                    break;
+                }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[DataReceiver] 发生预期外异常: {ex.Message}.");
-                    break;
+                    Console.WriteLine($"[DataReceiver] 发生非致命异常: {ex.Message}.");
                 }
                 finally
                 {
                     // 5) 释放互斥锁 + 让出CPU
-                    Console.WriteLine("[DataReceiver] 释放锁, 资源清理完毕.");
+                    Console.WriteLine("[DataReceiver] -----------------R End-------------------");
                     PlUsbBridgeManager._oneThreadAtATime.Release();
                     await Task.Delay(Constants.THREAD_SWITCH_SLEEP_TIME, _token);
                 }
@@ -131,7 +147,7 @@ namespace Isc.Yft.UsbBridge.Threading
         }
 
         /// <summary>
-        /// 尝试将原始字节解析为一个 Packet, 这里只是示例
+        /// 尝试将原始字节解析为一个 Packet
         /// </summary>
         private Packet TryParsePacket(byte[] buffer, int readCount)
         {

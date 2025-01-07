@@ -1,5 +1,6 @@
 ﻿using Isc.Yft.UsbBridge.Interfaces;
 using Isc.Yft.UsbBridge.Models;
+using Isc.Yft.UsbBridge.Exceptions;
 using Isc.Yft.UsbBridge;
 using System;
 using System.Threading;
@@ -29,7 +30,7 @@ namespace Isc.Yft.UsbBridgeTest
                     try
                     {
                         // 等待 SendBigData 完成并获取返回值
-                        Result<string> result = bridge.SendBigData(EPacketOwner.OUTERNET, dummyData);
+                        Result<string> result = await bridge.SendBigData(EPacketOwner.OUTERNET, dummyData);
 
                         // 判断返回结果
                         if (result.IsSuccess)
@@ -56,7 +57,7 @@ namespace Isc.Yft.UsbBridgeTest
                     Console.WriteLine($"[Main] 模式已切换为: [{mode}].");
 
                     // 再等待一段时间
-                    await Task.Delay(40000);
+                    await Task.Delay(400000);
 
                     // 主程序结束前，停止桥接
                     Console.WriteLine("[Main] 即将停止桥接...");
@@ -65,10 +66,21 @@ namespace Isc.Yft.UsbBridgeTest
                 Console.WriteLine("[Main] 已退出,按任意键结束.");
                 Console.ReadKey();
             }
+            catch (InvalidHardwareException ex)
+            {
+                Console.WriteLine($"[Main] USB硬件通讯中发生致命错误，退出...{ex.Message}");
+            }
+            catch (CopylineNotFoundException ex)
+            {
+                Console.WriteLine($"[Main] USB设备硬件未找到，退出...{ex.Message}");
+            }
+            catch (PacketMismatchException ex)
+            {
+                Console.WriteLine($"[Main] USB通讯中，发生数据包匹配错误，退出...{ex.Message}");
+            }
             catch (Exception ex)
             {
-                Console.WriteLine("[Main] Main程序中发生致命错误，退出......");
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine($"[Main] Main程序中发生致命错误，退出...{ex.Message}");
             }
         }
     }

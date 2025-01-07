@@ -154,7 +154,7 @@ namespace Isc.Yft.UsbBridge.Models
         {
             lock (_lock) // 加锁，确保多个变量读取时的一致性
             {
-                return $"名称/VID/PID = [{Name}/{Pid}/{Vid}] 从设备获取 = [{FromDevice}], " +
+                return $"名称/VID/PID = [{Name}/0x{Pid:X}/0x{Vid:X}] 从设备获取 = [{FromDevice}], " +
                        $"地址 = [In: BulkInAddress={BulkInAddress}, Out:BulkOutAddress={BulkOutAddress}], " +
                        $"接口番号 = [{BulkInterfaceNo}]";
             }

@@ -30,6 +30,8 @@ public sealed class LibusbDeviceSafeHandle : SafeHandle
         {
             // 调用 libusb_close(deviceHandle)
             LibusbInterop.libusb_close(handle);
+            handle = IntPtr.Zero;
+            Console.WriteLine("LibusbDeviceSafeHandle的ReleaseHandle()中调用了libusb_close()。");
         }
         return true;
     }
@@ -48,7 +50,7 @@ public sealed class LibusbDeviceSafeHandle : SafeHandle
         IntPtr devicePtr = LibusbInterop.libusb_open_device_with_vid_pid(libUsbContext, vendorId, productId);
         if (devicePtr == IntPtr.Zero)
         {
-            throw new CopylineNotFoundException($"无法打开 USB 设备 (VID=0x{vendorId:X4}, PID=0x{productId:X4}).");
+            throw new CopylineNotFoundException($"OpenDevice()无法安全打开 USB 设备 (VID=0x{vendorId:X4}, PID=0x{productId:X4})。");
         }
 
         // 将获得的原生指针包装到 SafeHandle

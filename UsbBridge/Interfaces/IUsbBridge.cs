@@ -23,7 +23,7 @@ namespace Isc.Yft.UsbBridge.Interfaces
         /// 发送需要分解为多个数据包的大数据
         /// </summary>
         /// <param name="data">待发送的字节数组</param>
-        Result<string> SendBigData(EPacketOwner owner, byte[] data);
+        Task<Result<string>> SendBigData(EPacketOwner owner, byte[] data);
 
         /// <summary>
         /// 设定或更改数据线的工作模式

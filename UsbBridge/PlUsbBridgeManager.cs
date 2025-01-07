@@ -9,6 +9,8 @@ using Isc.Yft.UsbBridge.Threading;
 using Isc.Yft.UsbBridge.Utils;
 using System.Linq;
 using System.Text;
+using Isc.Yft.UsbBridge.Exceptions;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Isc.Yft.UsbBridge
 {
@@ -29,10 +31,13 @@ namespace Isc.Yft.UsbBridge
         internal static SemaphoreSlim _oneThreadAtATime = new SemaphoreSlim(1, 1);
         // ACK 事件
         internal static ManualResetEventSlim _ackEvent = new ManualResetEventSlim(false);
-        // 后台任务取消信号
+        // 监控和接收数据任务取消信号
         private CancellationTokenSource _backend_cts;
-        // 数据发送任务取消信号
-        private CancellationTokenSource _send_data_cts;
+        // Ack包等待取消信号
+        private CancellationTokenSource _waitAckToken;
+
+        // 事件，用于往更上一层报告错误信息
+        public event EventHandler<InvalidHardwareException> FatalErrorOccurred;
 
         // 用于记录当前USB工作模式
         private USBMode _currentMode = new USBMode(EUSBPosition.OUTSIDE, EUSBDirection.UPLOAD);
@@ -42,24 +47,9 @@ namespace Isc.Yft.UsbBridge
 
         public PlUsbBridgeManager()
         {
-            _backend_cts = new CancellationTokenSource();
-            _send_data_cts = new CancellationTokenSource();
-
             // 这里决定用哪个芯片控制类
             // _usbCopyline = new Pl25A1UsbCopyline();
             _usbCopyline = new Pl27A7UsbCopyline();
-
-            // 先初始化 & 打开设备
-            _usbCopyline.Initialize();
-            _usbCopyline.OpenCopyline();
-            if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.ONLINE)
-            {
-                Console.WriteLine($"[Main] USB设备已打开, 且设备状态为ONLINE!");
-            }
-            else
-            {
-                Console.WriteLine($"[Main] USB设备OFFLINE: {_usbCopyline.Status}");
-            }
         }
 
         // 析构函数
@@ -84,7 +74,7 @@ namespace Isc.Yft.UsbBridge
                     StopThreads();
 
                     _backend_cts.Dispose();
-                    _send_data_cts.Dispose();
+                    _waitAckToken.Dispose();
                     _usbCopyline.Dispose();
                     Console.WriteLine($"[Main] 调用了Dispose(),清理了类中的非托管资源。");
                 }
@@ -96,13 +86,35 @@ namespace Isc.Yft.UsbBridge
             }
         }
 
+        public void Initialize()
+        {
+            // 设定取消信号
+            _backend_cts = new CancellationTokenSource();
+            _waitAckToken = new CancellationTokenSource();
+
+            // 先初始化 & 打开设备
+            _usbCopyline.Initialize();
+            _usbCopyline.OpenCopyline();
+            if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.ONLINE)
+            {
+                Console.WriteLine($"[Main] USB设备已打开, 且设备状态为ONLINE!");
+            }
+            else
+            {
+                Console.WriteLine($"[Main] USB设备不在线: {_usbCopyline.Status}");
+            }
+        }
+
         public void StartThreads()
         {
             try
             {
                 // 实例化三个后台角色，并将 _syncUSBLock 传入
                 _dataReceiver = new DataReceiver(_sendRequest, _backend_cts.Token, _usbCopyline);
+                _dataReceiver.FatalErrorOccurred += Receiver_FatalErrorOccurred;
+
                 _dataMonitor = new DataMonitor(this, _backend_cts.Token, _usbCopyline);
+                _dataMonitor.FatalErrorOccurred += Monitor_FatalErrorOccurred;
 
                 // 运行读取和监控两个任务
                 _receiverTask = _dataReceiver.RunAsync();
@@ -116,21 +128,56 @@ namespace Isc.Yft.UsbBridge
             }
         }
 
+        private void Monitor_FatalErrorOccurred(object sender, InvalidHardwareException ex)
+        {
+            Console.WriteLine("[PIUsbBridgeManager] 收到Monitor的致命错误事件: " + ex.Message);
+
+            // 这里可以先做一层处理，比如先释放一些资源
+
+            // 把此异常通过Manager自己的事件“往上层”抛
+            FatalErrorOccurred?.Invoke(this, ex);
+        }
+
+        private void Receiver_FatalErrorOccurred(object sender, InvalidHardwareException ex)
+        {
+            Console.WriteLine("[PIUsbBridgeManager] 收到Receiver的致命错误事件: " + ex.Message);
+
+            // 这里可以先做一层处理，比如先释放一些资源
+
+            // 把此异常通过Manager自己的事件“往上层”抛
+            FatalErrorOccurred?.Invoke(this, ex);
+        }
+
         private void _dataReceiver_AckReceived(Packet obj)
         {
             throw new NotImplementedException();
         }
 
-        public void StopThreads()
+        public async void StopThreads()
         {
             try
             {
                 // 发出取消信号
                 _backend_cts.Cancel();
-                _send_data_cts.Cancel();
+                _waitAckToken.Cancel();
 
-                // 等待两个个后台任务结束
-                Task.WaitAll(_receiverTask, _monitorTask);
+                // 异步等待两个个后台任务结束
+                var tasks = new List<Task>();
+                if (_receiverTask != null) tasks.Add(_receiverTask);
+                if (_monitorTask != null) tasks.Add(_monitorTask);
+
+                // 给一个时间限制，比如5秒
+                Task allTask = Task.WhenAll(tasks);
+                if (await Task.WhenAny(allTask, Task.Delay(5000)) == allTask)
+                {
+                    // 所有后台任务成功结束
+                    Console.WriteLine("[Main] 所有后台任务已退出。");
+                }
+                else
+                {
+                    // 超时
+                    Console.WriteLine("[Main] 停止线程时等待超时, 后台线程可能卡住。");
+                }
                 Console.WriteLine("[Main] 所有后台任务已退出。");
             }
             catch (AggregateException aex)
@@ -139,7 +186,7 @@ namespace Isc.Yft.UsbBridge
                 {
                     if (ex is OperationCanceledException)
                     {
-                        Console.WriteLine($"[Main] 任务取消: {ex.Message}");
+                        Console.WriteLine($"[Main] 任务正常取消: {ex.Message}");
                     }
                     else
                     {
@@ -154,7 +201,7 @@ namespace Isc.Yft.UsbBridge
             Console.WriteLine("[Main] StopThreads 已完成清理。");
         }
 
-        public Result<string> SendBigData(EPacketOwner owner, byte[] data)
+        public async Task<Result<string>> SendBigData(EPacketOwner owner, byte[] data)
         {
             if (!_backend_cts.IsCancellationRequested)
             {
@@ -244,7 +291,7 @@ namespace Isc.Yft.UsbBridge
                     allPackets.Add(tailPacket);
 
                     // 待发送数据作为一个整体，一次性全部放入发送队列
-                    Result<string> ret = SendAllPackets(allPackets.ToArray());
+                    Result<string> ret = await SendAllPackets(allPackets.ToArray());
                     return ret;
 
                 }
@@ -264,7 +311,7 @@ namespace Isc.Yft.UsbBridge
         /// </summary>
         /// <param name="allPackets"></param>
         /// <returns>任务</returns>
-        public Result<string> SendAllPackets(Packet[] allPackets)
+        public async Task<Result<string>> SendAllPackets(Packet[] allPackets)
         {
             // 构造发送Task
 
@@ -272,40 +319,59 @@ namespace Isc.Yft.UsbBridge
             _sendRequest = new SendRequest(allPackets);
 
             // 2) 构造发送器
-            SynDataSender dataSender = new SynDataSender(_sendRequest, _send_data_cts.Token, _usbCopyline);
+            DataSender dataSender = new DataSender(_sendRequest, _waitAckToken.Token, _usbCopyline);
             _dataReceiver.AckReceived += dataSender.OnAckReceived;
+
+            Result<string> ret = Result<String>.Success("发送中...");
             try
             {
-                // 3) 发送
-                Result<string> result = dataSender.RunSendData();
+                // 3) 等待信号量
+                await _oneThreadAtATime.WaitAsync(_backend_cts.Token);
+                if (!_backend_cts.IsCancellationRequested)
+                {
+                    // 4) 发送
+                    Result<string>  result = dataSender.RunSendData();
 
-                if (!result.IsSuccess)
-                {
-                    // 说明发送线程那边用 SetResult(false) 代表失败
-                    // 也可能用 SetException(...) -> 走catch
-                    string msg = $"发送失败！信息:{result.ErrorMessage}";
-                    Console.WriteLine($"[Main] {msg}");
-                    return Result<string>.Failure(1001, msg);
-                }
-                else
-                {
-                    string msg = "发送成功！";
-                    Console.WriteLine($"[Main] {msg}");
-                    return Result<string>.Success($"{msg}");
+                    if (!result.IsSuccess)
+                    {
+                        // 说明发送线程那边用 SetResult(false) 代表失败
+                        // 也可能用 SetException(...) -> 走catch
+                        string msg = $"发送失败！信息:{result.ErrorMessage}";
+                        Console.WriteLine($"[Main] {msg}");
+                        ret = Result<string>.Failure(1001, msg);
+                    }
+                    else
+                    {
+                        string msg = "发送成功！";
+                        Console.WriteLine($"[Main] {msg}");
+                        ret = Result<string>.Success($"{msg}");
+                    }
                 }
             }
             catch (TimeoutException tex)
             {
                 string msg = $"发送超时: {tex.Message}...";
                 Console.WriteLine($"[Main] {msg}");
-                return Result<string>.Failure(1002, $"{msg}");
+                ret = Result<string>.Failure(1002, $"{msg}");
+            }
+            catch (OperationCanceledException)
+            {
+                string msg = $"[Main] 任务收到取消信号.";
+                Console.WriteLine($"[Main] {msg}");
+                ret = Result<string>.Failure(1004, $"{msg}");
             }
             catch (Exception ex)
             {
                 string msg = $"预期外错误: {ex.Message}...";
                 Console.WriteLine($"[Main] {msg}");
-                return Result<string>.Failure(1003, $"{msg}");
+                ret = Result<string>.Failure(1003, $"{msg}");
             }
+            finally
+            {
+                // 5) 释放信号量
+                _oneThreadAtATime.Release();
+            }
+            return ret;
         }
 
         public void SetMode(USBMode status)

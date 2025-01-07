@@ -6,20 +6,20 @@ using System.Threading;
 
 namespace Isc.Yft.UsbBridge.Threading
 {
-    internal class SynDataSender
+    internal class DataSender
     {
         private readonly SendRequest _request;
 
         // 取消信号
-        private readonly CancellationToken _token;
+        private readonly CancellationToken _waitAckToken;
 
         // 具体的对拷线控制实例
         private readonly ICopyline _usbCopyline;
 
-        public SynDataSender(SendRequest request, CancellationToken token, ICopyline usbCopyline)
+        public DataSender(SendRequest request, CancellationToken token, ICopyline usbCopyline)
         {
             _request = request;
-            _token = token;
+            _waitAckToken = token;
             _usbCopyline = usbCopyline;
         }
 
@@ -29,7 +29,10 @@ namespace Isc.Yft.UsbBridge.Threading
             SendRequest request = _request;
             try
             {
+                Console.WriteLine("[DataSender] --------------S Start--------------------");
+
                 // (1) 检查拷贝线状态是否可用
+                _usbCopyline.OpenCopyline();
                 _usbCopyline.UpdateCopylineStatus();
                 if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.ONLINE)
                 {
@@ -67,7 +70,7 @@ namespace Isc.Yft.UsbBridge.Threading
                                     PlUsbBridgeManager._ackEvent.Reset();
                                     Console.WriteLine("[DataSender] 等待ACK...");
                                     // 等待一定超时时间 & 或收到取消消息
-                                    bool signaled = PlUsbBridgeManager._ackEvent.Wait(Constants.ACK_TIMEOUT_MS, _token);
+                                    bool signaled = PlUsbBridgeManager._ackEvent.Wait(Constants.ACK_TIMEOUT_MS, _waitAckToken);
                                     if (!signaled)
                                     {
                                         // --> 超时
@@ -111,6 +114,7 @@ namespace Isc.Yft.UsbBridge.Threading
             }
             finally
             {
+                Console.WriteLine("[DataSender] --------------S End----------------------");
             }
             return sendResult;
         }
