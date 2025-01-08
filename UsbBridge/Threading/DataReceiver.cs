@@ -126,7 +126,7 @@ namespace Isc.Yft.UsbBridge.Threading
                 finally
                 {
                     // 5) 释放互斥锁 + 让出CPU
-                    Logger.Warn("[DataReceiver] -----------------R End-------------------");
+                    Logger.Info("[DataReceiver] -----------------R End-------------------");
                     PlUsbBridgeManager._oneThreadAtATime.Release();
                     await Task.Delay(Constants.THREAD_SWITCH_SLEEP_TIME, _token);
                 }

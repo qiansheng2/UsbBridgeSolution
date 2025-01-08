@@ -65,9 +65,8 @@ namespace Isc.Yft.UsbBridge.Devices
             catch (AccessViolationException ave)
             {
                 Logger.Fatal("WriteDataToDevice()捕获到AccessViolationException: " + ave.Message);
-                throw new InvalidHardwareException($"批量写入数据时，发现USB数据传输通路损毁，无法进行读写操作...{ave.Message}");
+                throw new InvalidHardwareException($"批量写入数据时，发现USB数据传输通路损毁，无法写入...{ave.Message}");
             }
-
         }
 
         [HandleProcessCorruptedStateExceptions]
@@ -102,9 +101,8 @@ namespace Isc.Yft.UsbBridge.Devices
             catch (AccessViolationException ave)
             {
                 Logger.Fatal("ReadDataFromDevice()捕获到AccessViolationException: " + ave.Message);
-                throw new InvalidHardwareException($"批量读取数据时，发现USB数据传输通路损毁，无法进行读写操作...{ave.Message}");
+                throw new InvalidHardwareException($"批量读取数据时，发现USB数据传输通路损毁，无法读取...{ave.Message}");
             }
-
         }
     }
 }

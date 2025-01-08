@@ -53,12 +53,39 @@ namespace Isc.Yft.UsbBridgeTest
                     }
 
                     // 等待若干秒，让接收 & 监控任务输出一些日志
-                    await Task.Delay(40000);
+                    await Task.Delay(4000);
 
                     // 切换模式
                     USBMode mode = new USBMode(EUSBPosition.OUTSIDE, EUSBDirection.UPLOAD);
                     bridge.SetMode(mode);
                     Logger.Info($"[Main] 模式已切换为: [{mode}].");
+
+                    for(int i=0; i<100; i++){
+
+                        Logger.Info($"发送第{i + 1}次数据...");
+                        // 发送一些测试数据
+                        byte[] dummyData2 = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+                        try
+                        {
+                            // 等待 SendBigData 完成并获取返回值
+                            Result<string> result = await bridge.SendBigData(EPacketOwner.OUTERNET, dummyData);
+
+                            // 判断返回结果
+                            if (result.IsSuccess)
+                            {
+                                Logger.Info($"[Main] SendBigData 执行成功，返回数据: {result.Data}");
+                            }
+                            else
+                            {
+                                Logger.Warn($"[Main] SendBigData 执行失败，错误信息: [{result.ErrorCode}] {result.ErrorMessage}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // 捕获异常
+                            Logger.Error($"[Main] SendBigData 执行时发生异常: {ex.Message}");
+                        }
+                    }
 
                     // 再等待一段时间
                     await Task.Delay(400000);
