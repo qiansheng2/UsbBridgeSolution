@@ -8,6 +8,7 @@ namespace Isc.Yft.UsbBridge.Utils
 {
     internal class TimeStampIdUtil
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
         private static long _lastTimestamp = -1; // 记录上一次的时间戳（毫秒）
         private static int _sequence = 0;       // 同一毫秒内的自增序号
         private static readonly object _lock = new object(); // 用于线程同步

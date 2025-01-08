@@ -9,6 +9,8 @@ namespace Isc.Yft.UsbBridge.Utils
 {
     internal class CommonUtil
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
         // 将字节数组转换为结构体
         public static T ByteArrayToStructure<T>(byte[] bytes) where T : struct
         {

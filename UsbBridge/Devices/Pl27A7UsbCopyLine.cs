@@ -12,6 +12,8 @@ namespace Isc.Yft.UsbBridge.Devices
 {
     internal sealed class Pl27A7UsbCopyline : PICopyline
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
         // ========== 覆盖PICopyline virtual 属性 ==========
         public override CopylineInfo Info { get; }
         public override CopylineStatus Status { get; }
@@ -39,7 +41,7 @@ namespace Isc.Yft.UsbBridge.Devices
         {
             if (_deviceHandle.IsInvalid)
             {
-                Console.WriteLine($"[{Info.Name}] 设备尚未打开，无法写入数据.");
+                Logger.Error($"[{Info.Name}] 设备尚未打开，无法写入数据.");
                 return 0;
             }
 
@@ -54,15 +56,15 @@ namespace Isc.Yft.UsbBridge.Devices
                     Constants.BULK_TIMEOUT_MS);
                 if (ret < 0)
                 {
-                    Console.WriteLine($"[{Info.Name}] 写数据失败，libusb_bulk_transfer 返回: {ret}");
+                    Logger.Error($"[{Info.Name}] 写数据失败，libusb_bulk_transfer 返回: {ret}");
                     return 0;
                 }
-                Console.WriteLine($"[{Info.Name}] 已写入 {transferred} 字节.");
+                Logger.Info($"[{Info.Name}] 已写入 {transferred} 字节.");
                 return transferred;
             }
             catch (AccessViolationException ave)
             {
-                Console.WriteLine("WriteDataToDevice()捕获到AccessViolationException: " + ave.Message);
+                Logger.Fatal("WriteDataToDevice()捕获到AccessViolationException: " + ave.Message);
                 throw new InvalidHardwareException($"批量写入数据时，发现USB数据传输通路损毁，无法进行读写操作...{ave.Message}");
             }
 
@@ -74,7 +76,7 @@ namespace Isc.Yft.UsbBridge.Devices
         {
             if (_deviceHandle.IsInvalid)
             {
-                Console.WriteLine($"[{Info.Name}] 设备尚未打开，无法读取数据.");
+                Logger.Error($"[{Info.Name}] 设备尚未打开，无法读取数据.");
                 return 0;
             }
 
@@ -90,16 +92,16 @@ namespace Isc.Yft.UsbBridge.Devices
 
                 if (ret < 0)
                 {
-                    Console.WriteLine($"[{Info.Name}] 读数据失败，libusb_bulk_transfer 返回: {ret}");
+                    Logger.Error($"[{Info.Name}] 读数据失败，libusb_bulk_transfer 返回: {ret}");
                     return 0;
                 }
 
-                Console.WriteLine($"[{Info.Name}] 已读取 {transferred} 字节.");
+                Logger.Info($"[{Info.Name}] 已读取 {transferred} 字节.");
                 return transferred;
             }
             catch (AccessViolationException ave)
             {
-                Console.WriteLine("ReadDataFromDevice()捕获到AccessViolationException: " + ave.Message);
+                Logger.Fatal("ReadDataFromDevice()捕获到AccessViolationException: " + ave.Message);
                 throw new InvalidHardwareException($"批量读取数据时，发现USB数据传输通路损毁，无法进行读写操作...{ave.Message}");
             }
 

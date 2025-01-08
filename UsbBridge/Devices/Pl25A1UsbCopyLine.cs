@@ -9,6 +9,8 @@ namespace Isc.Yft.UsbBridge.Devices
 {
     internal sealed class Pl25A1UsbCopyline : PICopyline
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
         // ========== 覆盖PICopyline virtual 属性 ==========
         public override CopylineInfo Info { get; }
 
@@ -32,7 +34,7 @@ namespace Isc.Yft.UsbBridge.Devices
         {
             if (_deviceHandle.IsInvalid)
             {
-                Console.WriteLine($"[{Info.Name}] 设备尚未打开，无法写入数据.");
+                Logger.Error($"[{Info.Name}] 设备尚未打开，无法写入数据.");
                 return 0;
             }
 
@@ -46,11 +48,11 @@ namespace Isc.Yft.UsbBridge.Devices
 
             if (ret < 0)
             {
-                Console.WriteLine($"[{Info.Name}] 写数据失败，libusb_bulk_transfer 返回: {ret}");
+                Logger.Error($"[{Info.Name}] 写数据失败，libusb_bulk_transfer 返回: {ret}");
                 return 0;
             }
 
-            Console.WriteLine($"[{Info.Name}] 已写入 {transferred} 字节.");
+            Logger.Info($"[{Info.Name}] 已写入 {transferred} 字节.");
             return transferred;
         }
 
@@ -58,7 +60,7 @@ namespace Isc.Yft.UsbBridge.Devices
         {
             if (_deviceHandle.IsInvalid)
             {
-                Console.WriteLine($"[{Info.Name}] 设备尚未打开，无法读取数据.");
+                Logger.Error($"[{Info.Name}] 设备尚未打开，无法读取数据.");
                 return 0;
             }
 
@@ -72,11 +74,11 @@ namespace Isc.Yft.UsbBridge.Devices
 
             if (ret < 0)
             {
-                Console.WriteLine($"[{Info.Name}] 读数据失败，libusb_bulk_transfer 返回: {ret}");
+                Logger.Error($"[{Info.Name}] 读数据失败，libusb_bulk_transfer 返回: {ret}");
                 return 0;
             }
 
-            Console.WriteLine($"[{Info.Name}] 已读取 {transferred} 字节.");
+            Logger.Info($"[{Info.Name}] 已读取 {transferred} 字节.");
             return transferred;
         }
     }

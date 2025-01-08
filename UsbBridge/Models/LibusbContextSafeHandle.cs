@@ -4,6 +4,7 @@ using Isc.Yft.UsbBridge.Models;
 
 public sealed class LibUsbContextSafeHandle : SafeHandle
 {
+    private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
     /// <summary>
     /// 私有构造函数，设置初始句柄为 IntPtr.Zero，并表明「需要」释放资源 (ownsHandle=true)
     /// </summary>
@@ -30,6 +31,7 @@ public sealed class LibUsbContextSafeHandle : SafeHandle
             // 调用 libusb_exit(ctx)
             LibusbInterop.libusb_exit(handle);
             handle = IntPtr.Zero;
+            Logger.Info("LibusbContextSafeHandle的ReleaseHandle()中调用了libusb_exit()。");
         }
         return true;
     }

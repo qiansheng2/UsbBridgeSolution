@@ -8,7 +8,6 @@ namespace Isc.Yft.UsbBridge.Models
 {
     internal class AckPacket : Packet
     {
-
         public AckPacket():base()
         { }
 

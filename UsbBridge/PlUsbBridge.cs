@@ -11,6 +11,8 @@ namespace Isc.Yft.UsbBridge
 {
     public class PlUsbBridge : Interfaces.IUsbBridge
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
         // 简单起见，把管理逻辑放到 PlUsbBridgeManager
         private PlUsbBridgeManager _manager;
 
@@ -48,7 +50,7 @@ namespace Isc.Yft.UsbBridge
 
         private void Manager_FatalErrorOccurred(object sender, InvalidHardwareException ex)
         {
-            Console.WriteLine("[PIUsbBridge] 收到Manager的InvalidHardwareException: " + ex.Message);
+            Logger.Error("[PIUsbBridge] 收到Manager的InvalidHardwareException: " + ex.Message);
 
             // 让上层 UI 提示用户
 

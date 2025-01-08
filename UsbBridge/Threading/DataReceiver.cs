@@ -9,6 +9,7 @@ namespace Isc.Yft.UsbBridge.Threading
 {
     internal class DataReceiver
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly CancellationToken _token;
 
         // 定义事件，用于通知其他线程接收到的 ACK
@@ -41,10 +42,10 @@ namespace Isc.Yft.UsbBridge.Threading
 
                     // 1) 先请求单线程互斥锁，保证此时只有本线程在工作
                     await PlUsbBridgeManager._oneThreadAtATime.WaitAsync(_token);
-                    Console.WriteLine("[DataReceiver] -----------------R Start-----------------");
+                    Logger.Info("[DataReceiver] -----------------R Start-----------------");
                     if (_token.IsCancellationRequested)
                     {
-                        Console.WriteLine("取消信号在拿到锁后立即生效，不执行任何业务操作。");
+                        Logger.Info("取消信号在拿到锁后立即生效，不执行任何业务操作。");
                         break;
                     }
 
@@ -62,7 +63,7 @@ namespace Isc.Yft.UsbBridge.Threading
                         }
                         else if(readCount > 0)
                         {
-                            Console.WriteLine($"[DataReceiver] 接收到 {readCount} 字节: {BitConverter.ToString(buffer, 0, readCount)}");
+                            Logger.Info($"[DataReceiver] 接收到 {readCount} 字节: {BitConverter.ToString(buffer, 0, readCount)}");
 
                             // 4) 此处可进行解析: 将 raw bytes 转换为 Packet(s)
                             // （示例: 只处理单包; 若有粘包/分包, 需更复杂逻辑）
@@ -71,13 +72,13 @@ namespace Isc.Yft.UsbBridge.Threading
                                 Packet packet = TryParsePacket(buffer, readCount);
                                 if (packet != null)
                                 {
-                                    Console.WriteLine($"[DataReceiver] 解析到包: Type={packet.Type}, Index={packet.Index}/{packet.TotalCount}, Length={packet.ContentLength}");
+                                    Logger.Info($"[DataReceiver] 解析到包: Type={packet.Type}, Index={packet.Index}/{packet.TotalCount}, Length={packet.ContentLength}");
                                     if (packet.Type == EPacketType.ACK)
                                     {
                                         // 触发事件，通知发送线程
-                                        Console.WriteLine("[DataReceiver] 收到ACK, 即将把Ack包交给发送线程处理。");
+                                        Logger.Info("[DataReceiver] 收到ACK, 即将把Ack包交给发送线程处理。");
                                         AckReceived?.Invoke(packet);
-                                        Console.WriteLine("[DataReceiver] 收到ACK, 即将唤醒发送线程。");
+                                        Logger.Info("[DataReceiver] 收到ACK, 即将唤醒发送线程。");
                                         PlUsbBridgeManager._ackEvent.Set();
                                     }
                                     else
@@ -89,48 +90,48 @@ namespace Isc.Yft.UsbBridge.Threading
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"[DataReceiver] 无法解析为Packet, 忽略或等待更多数据");
+                                    Logger.Warn($"[DataReceiver] 无法解析为Packet, 忽略或等待更多数据");
                                 }
                             }
                             catch (Exception parseEx)
                             {
-                                Console.WriteLine($"[DataReceiver] 解析数据包时发生异常: {parseEx.Message}");
+                                Logger.Error($"[DataReceiver] 解析数据包时发生异常: {parseEx.Message}");
                             }
                         }
                         else
                         {
-                            Console.WriteLine($"[DataReceiver] 本轮没有从拷贝线读到数据,数据长度:[{readCount}]。");
+                            Logger.Warn($"[DataReceiver] 本轮没有从拷贝线读到数据,数据长度:[{readCount}]。");
                         }
                     }
                     else
                     {
-                        Console.WriteLine($"[DataReceiver] USB设备不可用，无法接收数据。");
+                        Logger.Warn($"[DataReceiver] USB设备不可用，无法接收数据。");
                     }
                 }
                 catch (OperationCanceledException)
                 {
-                    Console.WriteLine($"[DataReceiver] 任务收到取消信号.");
+                    Logger.Info($"[DataReceiver] 任务收到取消信号.");
                 }
                 catch (InvalidHardwareException hex)
                 {
-                    Console.WriteLine($"[DataReceiver] 发生致命错误,接收线程退出...{hex.Message}");
+                    Logger.Fatal($"[DataReceiver] 发生致命错误,接收线程退出...{hex.Message}");
                     // 触发事件，通知外部
                     FatalErrorOccurred?.Invoke(this, hex);
                     break;
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[DataReceiver] 发生非致命异常: {ex.Message}.");
+                    Logger.Error($"[DataReceiver] 发生非致命异常: {ex.Message}.");
                 }
                 finally
                 {
                     // 5) 释放互斥锁 + 让出CPU
-                    Console.WriteLine("[DataReceiver] -----------------R End-------------------");
+                    Logger.Warn("[DataReceiver] -----------------R End-------------------");
                     PlUsbBridgeManager._oneThreadAtATime.Release();
                     await Task.Delay(Constants.THREAD_SWITCH_SLEEP_TIME, _token);
                 }
             }
-            Console.WriteLine("[DataReceiver] 接收循环结束.");
+            Logger.Info("[DataReceiver] 接收循环结束.");
         }
 
         /// <summary>
@@ -142,7 +143,7 @@ namespace Isc.Yft.UsbBridge.Threading
             int flushCount = _usbCopyline.ReadDataFromDevice(flushBuf);
             if (flushCount > 0)
             {
-                Console.WriteLine($"[DataReceiver] flush操作接收到 {flushCount} 字节, 已抛弃.");
+                Logger.Warn($"[DataReceiver] flush操作接收到 {flushCount} 字节, 已抛弃.");
             }
         }
 
@@ -180,7 +181,7 @@ namespace Isc.Yft.UsbBridge.Threading
         private void HandleBusinessPacket(Packet packet)
         {
             // TODO: 你可以存入某队列, 交给上层去拼装, or 其他逻辑
-            Console.WriteLine($"[DataReceiver] 收到业务包, Type={packet.Type}, Index={packet.Index}/{packet.TotalCount}");
+            Logger.Info($"[DataReceiver] 收到业务包, Type={packet.Type}, Index={packet.Index}/{packet.TotalCount}");
         }
     }
 }

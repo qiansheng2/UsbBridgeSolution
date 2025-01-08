@@ -10,6 +10,7 @@ namespace Isc.Yft.UsbBridge.Models
     {
         #region 系统运行常量
         public const int THREAD_SWITCH_SLEEP_TIME = 4000;           // 线程切换等待常量
+        public const int STOP_THREAD_WAIT_TIME = 10000;             // 关闭线程时的等待时间
         public const int ACK_TIMEOUT_MS = 5000;                     // 发送数据后，等待ack返回的时间
         #endregion
 

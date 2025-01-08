@@ -11,6 +11,8 @@ namespace Isc.Yft.UsbBridge.Utils
     /// </summary>
     public static class Crc32Util
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
         // CRC-32 表 (0xEDB88320 多项式), 预先生成以提高性能
         private static readonly uint[] _crcTable = new uint[256];
 

@@ -5,6 +5,8 @@ namespace Isc.Yft.UsbBridge.Utils
 {
     internal class Sha256DigestUtil
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
         /// <summary>
         /// 使用 SHA-256 计算指定数据的摘要（Base64 编码）。
         /// </summary>
@@ -35,13 +37,13 @@ namespace Isc.Yft.UsbBridge.Utils
             catch (CryptographicException ce)
             {
                 // 捕获加密类异常，理论上少见，但仍要考虑
-                Console.WriteLine("[Error] 计算 SHA-256 摘要时出现加密异常：" + ce.Message);
+                Logger.Error("[Error] 计算 SHA-256 摘要时出现加密异常：" + ce.Message);
                 throw;  // 或者记录日志后重抛，防止信息丢失
             }
             catch (Exception ex)
             {
                 // 捕获其他未知异常
-                Console.WriteLine("[Error] 计算 SHA-256 摘要时出现异常：" + ex.Message);
+                Logger.Error("[Error] 计算 SHA-256 摘要时出现异常：" + ex.Message);
                 throw;
             }
         }
@@ -57,12 +59,12 @@ namespace Isc.Yft.UsbBridge.Utils
             // 1. 参数校验
             if (data == null || data.Length == 0)
             {
-                Console.WriteLine("[Warning] 被验证的原始数据为空或 null。");
+                Logger.Warn("[Warning] 被验证的原始数据为空或 null。");
                 return false;
             }
             if (string.IsNullOrWhiteSpace(providedDigestBase64))
             {
-                Console.WriteLine("[Warning] 提供的摘要值为空或 null。");
+                Logger.Warn("[Warning] 提供的摘要值为空或 null。");
                 return false;
             }
 
@@ -78,12 +80,12 @@ namespace Isc.Yft.UsbBridge.Utils
             catch (FormatException fe)
             {
                 // 如果 providedDigestBase64 解码失败，或其他格式问题
-                Console.WriteLine("[Error] 验证摘要时出现格式异常：" + fe.Message);
+                Logger.Error("[Error] 验证摘要时出现格式异常：" + fe.Message);
                 return false;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("[Error] 验证摘要时出现异常：" + ex.Message);
+                Logger.Error("[Error] 验证摘要时出现异常：" + ex.Message);
                 return false;
             }
         }

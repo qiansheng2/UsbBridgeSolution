@@ -5,6 +5,8 @@ using Isc.Yft.UsbBridge.Exceptions;
 
 public sealed class LibusbDeviceSafeHandle : SafeHandle
 {
+    private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
     /// <summary>
     /// 私有构造函数，设置初始句柄为 IntPtr.Zero，并表明需要释放资源 (ownsHandle=true)
     /// </summary>
@@ -31,7 +33,7 @@ public sealed class LibusbDeviceSafeHandle : SafeHandle
             // 调用 libusb_close(deviceHandle)
             LibusbInterop.libusb_close(handle);
             handle = IntPtr.Zero;
-            Console.WriteLine("LibusbDeviceSafeHandle的ReleaseHandle()中调用了libusb_close()。");
+            Logger.Info("LibusbDeviceSafeHandle的ReleaseHandle()中调用了libusb_close()。");
         }
         return true;
     }
