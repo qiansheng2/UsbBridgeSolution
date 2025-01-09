@@ -16,7 +16,7 @@ namespace Isc.Yft.UsbBridge.Models
 
         #region 数据包常量
         public const int VER1 = 1;
-        public const int CONTENT_MAX_SIZE = 968;
+        public const int CONTENT_MAX_SIZE = 969;
         public const int PACKET_MIN_SIZE = 56;
         public const int PACKET_MAX_SIZE = 1024;
         #endregion

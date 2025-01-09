@@ -56,16 +56,13 @@ namespace Isc.Yft.UsbBridge.Threading
                             // (2) 逐个发送
                             foreach (Packet packet in request.Packets)
                             {
-                                Logger.Info($"[DataSender] 发送包 => " +
-                                                    $"Type={packet.Type}, " +
-                                                    $"Index={packet.Index}/{packet.TotalCount}, " +
-                                                    $"Length={packet.ContentLength}.");
+                                Logger.Info($"[DataSender] 发送包 => {packet}");
                                 int written = _usbCopyline.WriteDataToDevice(packet.ToBytes());
                                 Logger.Info($"[DataSender] 已发送[{packet.Index}/{packet.TotalCount}]{packet.Type}包，内容长度：{packet.ContentLength}，写入了{written} 字节.");
                                     
                                 // (3) 如果是业务数据包 => 等待对端 ACK
                                 //     (可根据第一包的Type或其它方式判断)
-                                if (packet.Type != EPacketType.ACK)
+                                if (packet.Type != EPacketType.DATA_ACK)
                                 {
                                     // 重置 ackEvent
                                     PlUsbBridgeManager._ackEvent.Reset();

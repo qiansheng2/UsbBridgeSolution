@@ -6,7 +6,8 @@ namespace Isc.Yft.UsbBridge.Models
 {
     /// <summary>
     /// 主线程要求发送的一次请求，
-    /// 包含要发送的 Packet[] 以及一个 Acks[] 用于确认结果。
+    /// 包含要发送的 
+    /// 以及一个 Acks[] 用于确认结果。
     /// </summary>
     internal class SendRequest
     {

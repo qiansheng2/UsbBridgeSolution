@@ -11,7 +11,7 @@ namespace Isc.Yft.UsbBridge.Devices
 {
     internal abstract class PICopyline : ICopyline
     {
-        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+        protected static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
         // ========== 内部字段 ==========
         protected LibUsbContextSafeHandle _usbContext;
@@ -332,11 +332,11 @@ namespace Isc.Yft.UsbBridge.Devices
                 }
                 else
                 {
-                    string binaryString = CommonUtil.ByteArrayToBinaryString(devStatusBuffer);
+                    string binaryString = ComUtil.ByteArrayToBinaryString(devStatusBuffer);
                     // Logger.Info($"成功获取[{Info.Name}]设备{byteCounts}字节的状态信息: {binaryString}");
                 }
                 // 将字节数组转换为结构体
-                SDEV_STATUS devStatus = CommonUtil.ByteArrayToStructure<SDEV_STATUS>(devStatusBuffer);
+                SDEV_STATUS devStatus = ComUtil.ByteArrayToStructure<SDEV_STATUS>(devStatusBuffer);
 
                 // 设置对拷线活动状态 和 可用状态
                 Status.DeviceStatus = devStatus;

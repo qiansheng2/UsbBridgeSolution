@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using Isc.Yft.UsbBridge.Utils;
 
 /// <summary>
@@ -12,18 +13,20 @@ using Isc.Yft.UsbBridge.Utils;
 /// │ 4字节  │ 当前数据包位置索引   │ Index                      │
 /// │ 4字节  │ 数据包总字节数       │ TotalLength                │
 /// │ 4字节  │ 当前数据包实际字节数 │ ContentLength              │
-/// │ 17字节 │ 带时间戳的消息唯一ID │ MessageId                  │
+/// │ 16字节 │ 带时间戳的消息唯一ID │ MessageId                  │
 /// │ 16字节 │ 备用(0x00填充）      │ Reserved                   │
-/// │ 968字节│ 可变长数据包内容     │ Content                    │
+/// │ 969字节│ 可变长数据包内容     │ Content                    │
 /// │ 4字节  │ CRC-32校验           │ Crc32                      │
 /// └────────────────┴──────────────┘
-/// 合计: 1+1+1+4+4+4+4+17+16备用+968（最大，可变长）+4 = 1024 字节
+/// 合计: 1+1+1+4+4+4+4+16+16备用+969（最大，可变长）+4 = 1024 字节
 /// </summary>
 /// 
 namespace Isc.Yft.UsbBridge.Models
 {
     public class Packet
     {
+        protected static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
         /// <summary>
         /// [1字节] 数据包版本
         /// </summary>
@@ -60,9 +63,9 @@ namespace Isc.Yft.UsbBridge.Models
         public uint ContentLength { get; set; }
 
         /// <summary>
-        /// [17字节] 消息唯一ID
+        /// [16字节] 消息唯一ID
         /// </summary>
-        public byte[] MessageId { get; set; } = new byte[17];
+        public byte[] MessageId { get; set; } = new byte[16];
 
         /// <summary>
         /// [16字节] 备用（16字节）
@@ -100,38 +103,18 @@ namespace Isc.Yft.UsbBridge.Models
             Index = index;
             TotalLength = totalLength;
             ContentLength = contentLength;
+            MessageId = new byte[16];
+            Reserved = new byte[16];
+            Content = new byte[contentLength];
 
-            // 2. 校验并拷贝 messageId
-            if (messageId != null && messageId.Length == 16)
-            {
-                // 注意 Array.Copy 的参数顺序 (source, destination, length)
-                Array.Copy(messageId, 0, this.MessageId, 0, 16);
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException("messageId数据为空或长度不等于16！");
-            }
+            // 1. 校验并拷贝 messageId
+            Array.Copy( ComUtil.Resize(messageId,16), MessageId, MessageId.Length);
 
-            // 3. 校验并拷贝 reserved
-            if (reserved != null && reserved.Length == 16)
-            {
-                Array.Copy(reserved, 0, this.Reserved, 0, 16);
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException("reserved数据为空或长度不等于16！");
-            }
+            // 2. 校验并拷贝 reserved
+            Array.Copy( ComUtil.Resize(reserved, 16), Reserved, Reserved.Length);
 
-            // 4. 分配并拷贝 content (可变长)
-            if (content == null)
-                throw new ArgumentOutOfRangeException("content数据为空！");
-
-            if (contentLength > Constants.CONTENT_MAX_SIZE)
-                throw new ArgumentOutOfRangeException($"currentPacketLength大于长度上限({Constants.CONTENT_MAX_SIZE})！");
-
-            // 根据 contentLength 分配本地 Content
-            this.Content = new byte[contentLength];
-            Array.Copy(content, 0, this.Content, 0, contentLength);
+            // 3. 分配并拷贝 content (可变长)
+            Array.Copy(ComUtil.Resize(content, ContentLength), Content, Content.Length);
 
             // 计算 CRC
             byte[] buffer = BuildBytesForCrc(this);
@@ -192,6 +175,7 @@ namespace Isc.Yft.UsbBridge.Models
             offset += 16;
 
             // 写真正的内容
+            
             if (ContentLength > 0) 
                 Array.Copy(Content, 0, buffer, offset, ContentLength);
                 offset += ContentLength;
@@ -253,8 +237,8 @@ namespace Isc.Yft.UsbBridge.Models
             if ( buf.Length != len )
                 throw new ArgumentException($"数据长度不正确, 当前包的数据长度有{buf.Length}字节，应该是{len}字节，因此无法正确转换为数据包！");
 
-            packet.MessageId = new byte[17];
-            Array.Copy(buf, offset, packet.MessageId, 0, 17);
+            packet.MessageId = new byte[16];
+            Array.Copy(buf, offset, packet.MessageId, 0, 16);
             offset += 16;
 
             packet.Reserved = new byte[16];
@@ -273,22 +257,9 @@ namespace Isc.Yft.UsbBridge.Models
         }
 
         /// <summary>
-        /// 为本数据包附加CRC校验
-        /// </summary>
-        public void AddCRC()
-        {
-            // 计算 CRC-32
-            byte[] buffer = BuildBytesForCrc(this);
-            uint crcValue = Crc32Util.ComputeCrc32(buffer);
-            // Logger.Info($"CRC-32: 0x{crcValue:X8}");
-            byte[] crcBytes = BitConverter.GetBytes(crcValue);
-            Array.Copy(crcBytes, 0, this.Crc32, 0, 4);
-        }
-
-        /// <summary>
         /// 序列化自身，用于生成crc-32
         /// </summary>
-        private byte[] BuildBytesForCrc(Packet packet)
+        protected byte[] BuildBytesForCrc(Packet packet)
         {
             // 下面使用 MemoryStream + BinaryWriter
             using (var ms = new MemoryStream())
@@ -327,6 +298,68 @@ namespace Isc.Yft.UsbBridge.Models
 
                 bw.Flush();
                 return ms.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// 输出可打印的内容
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Packet Details:\n" +
+                   $"  Version: {Version}\n" +
+                   $"  Owner: {Owner}\n" +
+                   $"  Type: {Type}\n" +
+                   $"  TotalCount: {TotalCount}\n" +
+                   $"  Index: {Index}\n" +
+                   $"  TotalLength: {TotalLength}\n" +
+                   $"  ContentLength: {ContentLength}\n" +
+                   $"  MessageId: {GetMessageIdString()}\n" +
+                   $"  Reserved: {GetReservedString()}\n" +
+                   $"  Content: {GetContentUtfPreview()}\n" +
+                   $"  Crc32: {BitConverter.ToString(Crc32).Replace("-", " ")}";
+        }
+
+        // 辅助方法：还原 MessageId 为 16 位字符
+        private string GetMessageIdString()
+        {
+            if (MessageId == null || MessageId.Length != 16)
+                return "Invalid MessageId";
+
+            return System.Text.Encoding.ASCII.GetString(MessageId);
+        }
+
+        // 辅助方法：格式化 Reserved 为带空格的 00 00 形式
+        private string GetReservedString()
+        {
+            if (Reserved == null || Reserved.Length == 0)
+                return "null";
+
+            return BitConverter.ToString(Reserved).Replace("-", " ");
+        }
+
+        // 辅助方法：还原 Content 为 UTF-8 字符串，并限制输出为前 20 个字符
+        private string GetContentUtfPreview()
+        {
+            if (Content == null || Content.Length == 0)
+            {
+                return "null";
+            }
+
+            try
+            {
+                // 将 Content 字段解码为 UTF-8 字符串
+                string utfString = System.Text.Encoding.UTF8.GetString(Content);
+
+                // 如果字符串长度超过 20 个字符，截取前 20 个字符并加省略号
+                return utfString.Length > 20 ? utfString.Substring(0, 20) + "..." : utfString;
+            }
+            catch (Exception ex)
+            {
+                // 如果解码失败，返回十六进制预览
+                Logger.Warn($"Content 解码失败: {ex.Message}");
+                return BitConverter.ToString(Content, 0, Math.Min(Content.Length, 20)).Replace("-", " ") + (Content.Length > 20 ? " ..." : "");
             }
         }
     }

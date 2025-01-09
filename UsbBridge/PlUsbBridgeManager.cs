@@ -203,7 +203,12 @@ namespace Isc.Yft.UsbBridge
 
         public async Task<Result<string>> SendBigData(EPacketOwner owner, byte[] data)
         {
-            if (!_backend_cts.IsCancellationRequested)
+            //if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.OFFLINE)
+            //{
+            //    return Result<String>.Failure(1303, "本机的USB设备不可用。");
+            //}
+
+                if (!_backend_cts.IsCancellationRequested)
             {
                 try
                 {
@@ -214,7 +219,7 @@ namespace Isc.Yft.UsbBridge
 
                     // 附加2个包：HEAD包、TAIL包
                     int totalCount = 2 + (int)Math.Ceiling(totalLen / (double)chunkSize);
-                    byte[] messageId = Encoding.ASCII.GetBytes(TimeStampIdUtil.GenerateId()); // 带时间戳的13+4位唯一ID
+                    byte[] messageId = Encoding.ASCII.GetBytes(TimeStampIdUtil.GenerateId()); // 带时间戳的13+3位唯一ID
 
                     // 组装HEAD包
                     byte[] reservedData = new byte[16];
@@ -228,11 +233,11 @@ namespace Isc.Yft.UsbBridge
                         TotalCount = (uint)totalCount,
                         Index = (uint)1,
                         TotalLength = (uint)data.Length,
-                        ContentLength = (uint)0
+                        ContentLength = (uint)0,
+                        MessageId = messageId,
+                        Reserved = new byte[16],
+                        Content = new byte[(uint)0]
                     };
-                    Array.Copy(messageId, 0, headPacket.MessageId, 0, 17);
-                    Array.Copy(reservedData, 0, headPacket.Reserved, 0, 16);
-                    headPacket.AddCRC();
                     // 准备发送头数据
                     allPackets.Add(headPacket);
 
@@ -251,15 +256,11 @@ namespace Isc.Yft.UsbBridge
                             TotalCount = (uint)totalCount,
                             Index = (uint)i+1,
                             TotalLength = (uint)data.Length,
-                            ContentLength = (uint)sendSize
+                            ContentLength = (uint)sendSize,
+                            MessageId = messageId,
+                            Reserved = new byte[16],
+                            Content = data
                         };
-                        // 需要先为 Content 分配空间
-                        sendPacket.Content = new byte[(uint)sendSize];
-                        
-                        Array.Copy(messageId, 0, sendPacket.MessageId, 0, 16);
-                        Array.Copy(reservedData, 0, sendPacket.Reserved, 0, 16);
-                        Array.Copy(data, offset, sendPacket.Content, 0, sendSize);
-                        sendPacket.AddCRC();
 
                         // 准备发送业务数据
                         allPackets.Add(sendPacket);
@@ -267,6 +268,10 @@ namespace Isc.Yft.UsbBridge
                     }
 
                     // 组装TAIL包（生成摘要数据）
+
+                    // 32位摘要进行base64以后，是固定的44字节
+                    String digest = Sha256DigestUtil.ComputeSha256Digest(data);
+                    byte[] digestBytes = Convert.FromBase64String(digest);
                     Packet tailPacket = new Packet
                     {
                         Version = Constants.VER1,
@@ -275,18 +280,11 @@ namespace Isc.Yft.UsbBridge
                         TotalCount = (uint)totalCount,
                         Index = (uint)totalCount-1,
                         TotalLength = (uint)data.Length,
+                        ContentLength = (uint)digestBytes.Length,
+                        MessageId = messageId,
+                        Reserved = new byte[16],
+                        Content = digestBytes
                     };
-                    // 32位摘要进行base64以后，是固定的44字节
-                    String digest = Sha256DigestUtil.ComputeSha256Digest(data);
-                    byte[] digestBytes = Convert.FromBase64String(digest);
-                    tailPacket.ContentLength = (uint)digestBytes.Length;
-                    // 需要先为 Content 分配空间
-                    tailPacket.Content = new byte[(uint)digestBytes.Length];
-                    Array.Copy(digestBytes, 0, tailPacket.Content, 0, tailPacket.ContentLength);
-
-                    Array.Copy(messageId, 0, tailPacket.MessageId, 0, 17);
-                    Array.Copy(reservedData, 0, tailPacket.Reserved, 0, 16);
-                    tailPacket.AddCRC();
                     // 准备发送尾数据
                     allPackets.Add(tailPacket);
 
@@ -374,15 +372,57 @@ namespace Isc.Yft.UsbBridge
             return ret;
         }
 
-        public void SetMode(USBMode status)
+        public void SetMode(USBMode uSBMode)
         {
-            _currentMode = status;
-            Logger.Info($"[Main] SetMode = {status}");
+            _currentMode = uSBMode;
+            Logger.Info($"[Main] SetMode = {uSBMode}");
         }
 
         public USBMode GetCurrentMode()
         {
             return _currentMode;
+        }
+
+        public async Task<Result<String>> SendCommand(String command)
+        {
+
+            if (_currentMode.Position == EUSBPosition.INSIDE)
+            {
+                return Result<String>.Failure(1301, "内网电脑不能发送命令。");
+            }
+
+            //if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.OFFLINE)
+            //{
+            //    return Result<String>.Failure(1302, "本机的USB设备不可用。");
+            //}
+
+            byte[] messageId = Encoding.ASCII.GetBytes(TimeStampIdUtil.GenerateId()); // 带时间戳的13+3位唯一ID
+
+            // 设置content
+            byte[] commandBytes = ComUtil.Truncate(Encoding.UTF8.GetBytes(command), Constants.CONTENT_MAX_SIZE);
+
+            CommandPacket commandPacket = new CommandPacket
+            {
+                Version = Constants.VER1,
+                Owner = EPacketOwner.OUTERNET,
+                TotalCount = (uint)1,
+                Index = (uint)1,
+                TotalLength = (uint)commandBytes.Length,
+                ContentLength = (uint)commandBytes.Length,
+                MessageId = messageId,
+                Reserved = new byte[16],
+                Content = commandBytes
+            };
+            Logger.Debug($"{commandPacket}");
+
+            SynchronizedCollection<Packet> allPackets = new SynchronizedCollection<Packet>
+            {
+                commandPacket
+            }; // 需要传输的命令包
+
+            // 待发送数据作为一个整体，一次性全部放入发送队列
+            Result<string> ret = await SendAllPackets(allPackets.ToArray());
+            return ret;
         }
     }
 }

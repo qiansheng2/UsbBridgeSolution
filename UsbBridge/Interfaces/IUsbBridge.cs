@@ -37,5 +37,12 @@ namespace Isc.Yft.UsbBridge.Interfaces
         /// </summary>
         /// <returns>返回当前模式的描述</returns>
         USBMode GetCurrentMode();
+
+        /// <summary>
+        /// 外网向内网机器发送命令，并获取命令执行结果
+        /// </summary>
+        /// <param name="command"></param>
+        /// <returns></returns>
+        Task<Result<string>> SendCommand(string command);
     }
 }

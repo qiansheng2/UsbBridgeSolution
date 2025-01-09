@@ -18,12 +18,12 @@ namespace Isc.Yft.UsbBridge.Models
         public EUSBPosition Position { get; set; } = EUSBPosition.OUTSIDE;
 
         /// <summary>
-        /// USB工作状态（上传，下行）
+        /// USB数据传输方向（上传，下行）
         /// </summary>
-        public EUSBDirection Mode { get; set; } = EUSBDirection.UPLOAD;
+        public EUSBDirection Direction { get; set; } = EUSBDirection.UPLOAD;
 
         /// <summary>
-        /// USB工作状态（上传，下行）
+        /// USB设备是否存在
         /// </summary>
         public bool FoundDevice { get; set; } = false;
 
@@ -36,12 +36,12 @@ namespace Isc.Yft.UsbBridge.Models
         /// 构造函数
         /// </summary>
         /// <param name="usbPosition">USB 工作环境</param>
-        /// <param name="usbMode">USB 工作状态</param>
-        public USBMode(EUSBPosition usbPosition, EUSBDirection usbMode,
+        /// <param name="usbDirection">USB 工作状态</param>
+        public USBMode(EUSBPosition usbPosition, EUSBDirection usbDirection,
                        bool foundDevice = false)
         {
             Position = usbPosition;
-            Mode = usbMode;
+            Direction = usbDirection;
             FoundDevice = foundDevice;
         }
 
@@ -49,11 +49,11 @@ namespace Isc.Yft.UsbBridge.Models
         /// 构造函数
         /// </summary>
         /// <param name="usbPosition">USB 工作环境</param>
-        /// <param name="usbMode">USB 工作状态</param>
-        public void SetUSBMode(EUSBPosition usbPosition, EUSBDirection usbMode)
+        /// <param name="usbDirection">USB 工作状态</param>
+        public void SetUSBMode(EUSBPosition usbPosition, EUSBDirection usbDirection)
         {
             Position = usbPosition;
-            Mode = usbMode;
+            Direction = usbDirection;
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace Isc.Yft.UsbBridge.Models
         /// <returns>返回对象的字符串表示形式</returns>
         public override string ToString()
         {
-            return $"本机位置: [{Position}], 数据传输模式: [{Mode}]";
+            return $"本机位置: [{Position}], 数据传输方向: [{Direction}]";
         }
     }
 }

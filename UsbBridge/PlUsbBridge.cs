@@ -73,5 +73,11 @@ namespace Isc.Yft.UsbBridge
         {
             return _manager.GetCurrentMode();
         }
+
+        public async Task<Result<String>> SendCommand(String command)
+        {
+            Result<String> ret = await _manager.SendCommand(command);
+            return ret;
+        }
     }
 }

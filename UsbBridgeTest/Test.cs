@@ -28,13 +28,14 @@ namespace Isc.Yft.UsbBridgeTest
 
                     // 显示当前USB运行模式
                     Logger.Info($"[Main] 当前USB运行模式为: [{bridge.GetCurrentMode()}].");
+                    Result<string> result = new Result<string>();
 
                     // 发送一些测试数据
                     byte[] dummyData = { 0x01, 0x02, 0x03, 0x04, 0x05 };
                     try
                     {
                         // 等待 SendBigData 完成并获取返回值
-                        Result<string> result = await bridge.SendBigData(EPacketOwner.OUTERNET, dummyData);
+                        result = await bridge.SendBigData(EPacketOwner.OUTERNET, dummyData);
 
                         // 判断返回结果
                         if (result.IsSuccess)
@@ -68,7 +69,7 @@ namespace Isc.Yft.UsbBridgeTest
                         try
                         {
                             // 等待 SendBigData 完成并获取返回值
-                            Result<string> result = await bridge.SendBigData(EPacketOwner.OUTERNET, dummyData);
+                            result = await bridge.SendBigData(EPacketOwner.OUTERNET, dummyData);
 
                             // 判断返回结果
                             if (result.IsSuccess)
@@ -88,7 +89,32 @@ namespace Isc.Yft.UsbBridgeTest
                     }
 
                     // 再等待一段时间
-                    await Task.Delay(400000);
+                    await Task.Delay(4000);
+
+                    try
+                    {
+
+                        // 等待 SendCommand 完成并获取返回值
+                        result = await bridge.SendCommand("dir");
+
+                        // 判断返回结果
+                        if (result.IsSuccess)
+                        {
+                            Logger.Info($"[Main] SendCommand 执行成功，返回数据: {result.Data}");
+                        }
+                        else
+                        {
+                            Logger.Warn($"[Main] SendCommand 执行失败，错误信息: [{result.ErrorCode}] {result.ErrorMessage}");
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        // 捕获异常
+                        Logger.Error($"[Main] SendCommand 执行时发生异常: {ex.Message}");
+                    }
+
+                    // 再等待一段时间
+                    await Task.Delay(40000);
 
                     // 主程序结束前，停止桥接
                     Logger.Info("[Main] 即将停止桥接...");

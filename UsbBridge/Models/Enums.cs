@@ -38,16 +38,19 @@ namespace Isc.Yft.UsbBridge.Models
     {
         // 业务包头packet
         HEAD = 1,
+        HEAD_ACK = 2,
         // 数据包packet
-        DATA = 2,
+        DATA = 3,
+        DATA_ACK = 4,
         // 业务包尾packet
-        TAIL = 3,
-        // ACK packet
-        ACK = 4,
+        TAIL = 5,
+        TAIL_ACK = 6,
         // 命令 packet
-        CMD = 5,
+        CMD = 7,
+        CMD_ACK = 8,
         // 心跳 packet
-        HEARTBEAT = 6
+        HEARTBEAT = 9,
+        HEARTBEAT_ACK = 10
     }
 
     public enum ECopylineStatus: byte

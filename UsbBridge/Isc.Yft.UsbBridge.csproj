@@ -86,8 +86,11 @@
     <Compile Include="Exceptions\PacketMismatchException.cs" />
     <Compile Include="Interfaces\ICopyline.cs" />
     <Compile Include="Interfaces\IUsbBridge.cs" />
+    <Compile Include="Models\CommandAckPacket.cs" />
+    <Compile Include="Models\CommandPacket.cs" />
     <Compile Include="Models\CopylineStatus.cs" />
     <Compile Include="Models\CopylineInfo.cs" />
+    <Compile Include="Models\DataPacket.cs" />
     <Compile Include="Models\LibusbDeviceSafeHandle.cs" />
     <Compile Include="Models\LibusbInterop.cs" />
     <Compile Include="Models\LibusbContextSafeHandle.cs" />
@@ -96,7 +99,7 @@
     <Compile Include="Models\Structs.cs" />
     <Compile Include="Models\Constants.cs" />
     <Compile Include="Models\Enums.cs" />
-    <Compile Include="Models\AckPacket.cs" />
+    <Compile Include="Models\DataAckPacket.cs" />
     <Compile Include="Models\Packet.cs" />
     <Compile Include="Models\USBMode.cs" />
     <Compile Include="PlUsbBridge.cs" />
@@ -105,7 +108,7 @@
     <Compile Include="Threading\DataMonitor.cs" />
     <Compile Include="Threading\DataReceiver.cs" />
     <Compile Include="Threading\DataSender.cs" />
-    <Compile Include="Utils\CommonUtil.cs" />
+    <Compile Include="Utils\ComUtil.cs" />
     <Compile Include="Utils\Crc32Util.cs" />
     <Compile Include="Utils\Sha256DigestUtil.cs" />
     <Compile Include="Utils\TimeStampIdUtil.cs" />

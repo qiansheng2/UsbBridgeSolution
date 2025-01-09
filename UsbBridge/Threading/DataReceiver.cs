@@ -73,7 +73,7 @@ namespace Isc.Yft.UsbBridge.Threading
                                 if (packet != null)
                                 {
                                     Logger.Info($"[DataReceiver] 解析到包: Type={packet.Type}, Index={packet.Index}/{packet.TotalCount}, Length={packet.ContentLength}");
-                                    if (packet.Type == EPacketType.ACK)
+                                    if (packet.Type == EPacketType.DATA_ACK)
                                     {
                                         // 触发事件，通知发送线程
                                         Logger.Info("[DataReceiver] 收到ACK, 即将把Ack包交给发送线程处理。");

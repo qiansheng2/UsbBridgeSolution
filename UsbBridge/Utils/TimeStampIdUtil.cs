@@ -1,22 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using NLog;
 
 namespace Isc.Yft.UsbBridge.Utils
 {
     internal class TimeStampIdUtil
     {
-        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private static long _lastTimestamp = -1; // 记录上一次的时间戳（毫秒）
-        private static int _sequence = 0;       // 同一毫秒内的自增序号
+        private static int _sequence = 0;       // 同一毫秒内的自增序号(3位)
         private static readonly object _lock = new object(); // 用于线程同步
 
         /// <summary>
-        /// 生成带时间戳的id（13位UTC时间戳+4位自增序号），例如：16935672014560000
+        /// 生成带时间戳的ID（13位UTC时间戳+3位自增序号），例如：1693567201456000
         /// </summary>
-        /// <returns>带时间戳的id（13位UTC时间戳+4位自增序号）</returns>
+        /// <returns>带时间戳的ID（13位UTC时间戳+3位自增序号）</returns>
         public static string GenerateId()
         {
             lock (_lock) // 保证线程安全
@@ -28,8 +25,8 @@ namespace Isc.Yft.UsbBridge.Utils
                 {
                     _sequence++;
 
-                    // 如果序号超过 9999，则等待下一毫秒
-                    if (_sequence > 9999)
+                    // 如果序号超过 999，则等待下一毫秒
+                    if (_sequence > 999)
                     {
                         currentTimestamp = WaitForNextTimestamp(_lastTimestamp);
                         _sequence = 0; // 序号重置
@@ -43,7 +40,9 @@ namespace Isc.Yft.UsbBridge.Utils
                 }
 
                 // 返回带时间戳的唯一 ID
-                return $"{currentTimestamp}{_sequence:D4}"; // 序号填充为 4 位
+                string id = $"{currentTimestamp}{_sequence:D3}";
+                Logger.Debug($"Generated ID: {id}");
+                return id; // 序号填充为 3 位
             }
         }
 

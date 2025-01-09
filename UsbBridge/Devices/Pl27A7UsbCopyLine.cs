@@ -12,8 +12,6 @@ namespace Isc.Yft.UsbBridge.Devices
 {
     internal sealed class Pl27A7UsbCopyline : PICopyline
     {
-        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
-
         // ========== 覆盖PICopyline virtual 属性 ==========
         public override CopylineInfo Info { get; }
         public override CopylineStatus Status { get; }
