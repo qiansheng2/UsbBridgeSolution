@@ -56,7 +56,11 @@ namespace Isc.Yft.UsbBridge.Threading
                         byte[] buffer = new byte[Constants.PACKET_MAX_SIZE]; // 缓冲
                         Array.Clear(buffer, 0, buffer.Length); // 将 buffer 的所有元素设置为 0x00
                         readCount = _usbCopyline.ReadDataFromDevice(buffer); // 调用对拷线的 ReadDataFromDevice
-                        if (readCount < Constants.PACKET_MIN_SIZE || readCount > Constants.PACKET_MAX_SIZE) {
+                        if ( readCount == 0)
+                        {
+                            Logger.Info($"[DataReceiver] 没有从设备中读取到数据。");
+                        }
+                        else if (readCount < Constants.PACKET_MIN_SIZE || readCount > Constants.PACKET_MAX_SIZE) {
                             throw new InvalidCastException($"[DataReceiver] 读取到的数据不符合预期，数据长度[{readCount}] > 1024，直接抛弃。");
                         }
                         else if(readCount > 0)
