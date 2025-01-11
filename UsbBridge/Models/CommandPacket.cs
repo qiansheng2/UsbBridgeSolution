@@ -10,7 +10,7 @@ namespace Isc.Yft.UsbBridge.Models
     {
         public CommandPacket() : base()
         {
-            Type = EPacketType.DATA;
+            Type = EPacketType.CMD;
         }
 
         public CommandPacket(byte version,
