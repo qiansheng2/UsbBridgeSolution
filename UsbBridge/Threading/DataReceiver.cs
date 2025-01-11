@@ -4,6 +4,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Isc.Yft.UsbBridge.Exceptions;
+using Isc.Yft.UsbBridge.Handler;
 
 namespace Isc.Yft.UsbBridge.Threading
 {
@@ -11,9 +12,6 @@ namespace Isc.Yft.UsbBridge.Threading
     {
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly CancellationToken _token;
-
-        // 定义事件，用于通知其他线程接收到的 ACK
-        public event Action<Packet> AckReceived;
 
         // 具体的对拷线控制实例
         private readonly ICopyline _usbCopyline;
@@ -65,32 +63,33 @@ namespace Isc.Yft.UsbBridge.Threading
                         {
                             Logger.Info($"[DataReceiver] 接收到 {readCount} 字节: {BitConverter.ToString(buffer, 0, readCount)}");
 
-                            // 4) 此处可进行解析: 将 raw bytes 转换为 Packet(s)
-                            // （示例: 只处理单包; 若有粘包/分包, 需更复杂逻辑）
+                            // 4) 进行解析: 将 raw bytes 转换为 Packet(s)
                             try
                             {
                                 Packet packet = TryParsePacket(buffer, readCount);
-                                if (packet != null)
+                                if (packet == null)
                                 {
-                                    Logger.Info($"[DataReceiver] 解析到包: Type={packet.Type}, Index={packet.Index}/{packet.TotalCount}, Length={packet.ContentLength}");
-                                    if (packet.Type == EPacketType.DATA_ACK)
-                                    {
-                                        // 触发事件，通知发送线程
-                                        Logger.Info("[DataReceiver] 收到ACK, 即将把Ack包交给发送线程处理。");
-                                        AckReceived?.Invoke(packet);
-                                        Logger.Info("[DataReceiver] 收到ACK, 即将唤醒发送线程。");
-                                        PlUsbBridgeManager._ackEvent.Set();
-                                    }
-                                    else
-                                    {
-                                        // 其他业务包 => 做后续处理
-                                        // 例如存入某个队列, 或上层回调
-                                        HandleBusinessPacket(packet);
-                                    }
+                                    Logger.Warn("[DataReceiver] 无法解析为Packet, 忽略或等待更多数据");
                                 }
                                 else
                                 {
-                                    Logger.Warn($"[DataReceiver] 无法解析为Packet, 忽略或等待更多数据");
+                                    Logger.Info($"[DataReceiver] 解析到包: Type={packet.Type}, Index={packet.Index}/{packet.TotalCount}, Length={packet.ContentLength}");
+                                    IPacketHandler handler = PacketHandlerFactory.GetHandler(packet.Type);
+                                    if (handler != null)
+                                    {
+                                        try
+                                        {
+                                            await handler.Handle(packet); // 调用对应的处理方法
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Logger.Error($"[DataReceiver] 数据包处理过程中出错 {packet.Type}: {ex.Message}");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Logger.Error($"[DataReceiver] 未知的包类型: {packet.Type}");
+                                    }
                                 }
                             }
                             catch (Exception parseEx)
@@ -100,7 +99,7 @@ namespace Isc.Yft.UsbBridge.Threading
                         }
                         else
                         {
-                            Logger.Warn($"[DataReceiver] 本轮没有从拷贝线读到数据,数据长度:[{readCount}]。");
+                            Logger.Warn($"[DataReceiver] 没有从拷贝线读到任何数据,数据长度:[{readCount}]。");
                         }
                     }
                     else
@@ -139,7 +138,7 @@ namespace Isc.Yft.UsbBridge.Threading
         /// </summary>
         private void FlushOnce()
         {
-            byte[] flushBuf = new byte[1024 * 1000];
+            byte[] flushBuf = new byte[1024 * 10];
             int flushCount = _usbCopyline.ReadDataFromDevice(flushBuf);
             if (flushCount > 0)
             {
@@ -152,8 +151,7 @@ namespace Isc.Yft.UsbBridge.Threading
         /// </summary>
         private Packet TryParsePacket(byte[] buffer, int readCount)
         {
-            // 简单示例: 假设 readCount=1024 正好是一个Packet
-            // 实际中可能需要更多判断, 或循环多次解析(粘包场景)
+            // readCount=1024 正好是一个Packet
             if (readCount < 32)
             {
                 // 不足以构成最小头部? 
@@ -175,13 +173,5 @@ namespace Isc.Yft.UsbBridge.Threading
             return result;
         }
 
-        /// <summary>
-        /// 对于非ACK包的业务处理 (示例)
-        /// </summary>
-        private void HandleBusinessPacket(Packet packet)
-        {
-            // TODO: 你可以存入某队列, 交给上层去拼装, or 其他逻辑
-            Logger.Info($"[DataReceiver] 收到业务包, Type={packet.Type}, Index={packet.Index}/{packet.TotalCount}");
-        }
     }
 }

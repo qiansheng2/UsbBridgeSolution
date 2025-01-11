@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using Isc.Yft.UsbBridge.Exceptions;
 using static System.Net.Mime.MediaTypeNames;
+using Isc.Yft.UsbBridge.Handler;
 
 namespace Isc.Yft.UsbBridge
 {
@@ -30,14 +31,13 @@ namespace Isc.Yft.UsbBridge
 
         // One线程执行控制信号
         internal static SemaphoreSlim _oneThreadAtATime = new SemaphoreSlim(1, 1);
-        // ACK 事件
-        internal static ManualResetEventSlim _ackEvent = new ManualResetEventSlim(false);
+
         // 监控和接收数据任务取消信号
         private CancellationTokenSource _backend_cts;
         // Ack包等待取消信号
         private CancellationTokenSource _waitAckToken;
 
-        // 事件，用于往更上一层报告错误信息
+        // 订阅核心错误发生状况，用于往更上一层报告错误信息
         public event EventHandler<InvalidHardwareException> FatalErrorOccurred;
 
         // 用于记录当前USB工作模式
@@ -113,6 +113,7 @@ namespace Isc.Yft.UsbBridge
                 // 实例化三个后台角色，并将 _syncUSBLock 传入
                 _dataReceiver = new DataReceiver(_sendRequest, _backend_cts.Token, _usbCopyline);
                 _dataReceiver.FatalErrorOccurred += Receiver_FatalErrorOccurred;
+                IPacketHandler handler = PacketHandlerFactory.GetHandler(EPacketType.CMD_ACK);
 
                 _dataMonitor = new DataMonitor(this, _backend_cts.Token, _usbCopyline);
                 _dataMonitor.FatalErrorOccurred += Monitor_FatalErrorOccurred;
@@ -147,11 +148,6 @@ namespace Isc.Yft.UsbBridge
 
             // 把此异常通过Manager自己的事件“往上层”抛
             FatalErrorOccurred?.Invoke(this, ex);
-        }
-
-        private void _dataReceiver_AckReceived(Packet obj)
-        {
-            throw new NotImplementedException();
         }
 
         public async void StopThreads()
@@ -203,12 +199,12 @@ namespace Isc.Yft.UsbBridge
 
         public async Task<Result<string>> SendBigData(EPacketOwner owner, byte[] data)
         {
-            //if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.OFFLINE)
-            //{
-            //    return Result<String>.Failure(1303, "本机的USB设备不可用。");
-            //}
+            if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.OFFLINE)
+            {
+                return Result<String>.Failure(1303, "本机的USB设备不可用。");
+            }
 
-                if (!_backend_cts.IsCancellationRequested)
+            if (!_backend_cts.IsCancellationRequested)
             {
                 try
                 {
@@ -219,7 +215,7 @@ namespace Isc.Yft.UsbBridge
 
                     // 附加2个包：HEAD包、TAIL包
                     int totalCount = 2 + (int)Math.Ceiling(totalLen / (double)chunkSize);
-                    byte[] messageId = Encoding.ASCII.GetBytes(TimeStampIdUtil.GenerateId()); // 带时间戳的13+3位唯一ID
+                    byte[] messageId = Encoding.UTF8.GetBytes(TimeStampIdUtil.GenerateId()); // 带时间戳的13+3位唯一ID
 
                     // 组装HEAD包
                     byte[] reservedData = new byte[16];
@@ -309,7 +305,7 @@ namespace Isc.Yft.UsbBridge
         /// </summary>
         /// <param name="allPackets"></param>
         /// <returns>任务</returns>
-        public async Task<Result<string>> SendAllPackets(Packet[] allPackets)
+        private async Task<Result<string>> SendAllPackets(Packet[] allPackets)
         {
             // 构造发送Task
 
@@ -318,7 +314,6 @@ namespace Isc.Yft.UsbBridge
 
             // 2) 构造发送器
             DataSender dataSender = new DataSender(_sendRequest, _waitAckToken.Token, _usbCopyline);
-            _dataReceiver.AckReceived += dataSender.OnAckReceived;
 
             Result<string> ret = Result<String>.Success("发送中...");
             try
@@ -396,7 +391,7 @@ namespace Isc.Yft.UsbBridge
             //    return Result<String>.Failure(1302, "本机的USB设备不可用。");
             //}
 
-            byte[] messageId = Encoding.ASCII.GetBytes(TimeStampIdUtil.GenerateId()); // 带时间戳的13+3位唯一ID
+            byte[] messageId = Encoding.UTF8.GetBytes(TimeStampIdUtil.GenerateId()); // 带时间戳的13+3位唯一ID
 
             // 设置content
             byte[] commandBytes = ComUtil.Truncate(Encoding.UTF8.GetBytes(command), Constants.CONTENT_MAX_SIZE);
@@ -424,5 +419,29 @@ namespace Isc.Yft.UsbBridge
             Result<string> ret = await SendAllPackets(allPackets.ToArray());
             return ret;
         }
+        public async Task<Result<String>> SendAckPacket(Packet packet)
+        {
+
+            if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.OFFLINE)
+            {
+                return Result<String>.Failure(1302, "本机的USB设备不可用。");
+            }
+
+            SynchronizedCollection<Packet> allPackets = new SynchronizedCollection<Packet>
+            {
+                packet
+            }; // 需要传输的命令包
+
+            // 待发送数据作为一个整体，一次性全部放入发送队列
+            Result<string> ret = await SendAllPackets(allPackets.ToArray());
+            return ret;
+        }
+
+        public async Task<Result<String>> SendCommandAck(CommandAckPacket packet)
+        {
+            Result<String> ret = await SendAckPacket(packet);
+            return ret;
+        }
     }
 }
+

@@ -1,4 +1,5 @@
-﻿using Isc.Yft.UsbBridge.Interfaces;
+﻿using Isc.Yft.UsbBridge.Handler;
+using Isc.Yft.UsbBridge.Interfaces;
 using Isc.Yft.UsbBridge.Models;
 using System;
 using System.Security.Cryptography;
@@ -17,11 +18,23 @@ namespace Isc.Yft.UsbBridge.Threading
         // 具体的对拷线控制实例
         private readonly ICopyline _usbCopyline;
 
+        // ACK 事件
+        internal static ManualResetEventSlim _ackEvent = new ManualResetEventSlim(false);
+
+        // 事件处理器
+        private readonly DataAckPacketHandler _dataAckPacketHandler;
+
         public DataSender(SendRequest request, CancellationToken token, ICopyline usbCopyline)
         {
             _request = request;
             _waitAckToken = token;
             _usbCopyline = usbCopyline;
+            _ackEvent = new ManualResetEventSlim(false);
+
+            // DATA_ACK 包处理器定义和注册
+            _dataAckPacketHandler = new DataAckPacketHandler();
+            //_dataAckPacketHandler.AckReceived += OnAckReceived;
+            PacketHandlerFactory.RegisterHandler(EPacketType.DATA_ACK, _dataAckPacketHandler);
         }
 
         public Result<string> RunSendData()
@@ -65,10 +78,10 @@ namespace Isc.Yft.UsbBridge.Threading
                                 if (packet.Type != EPacketType.DATA_ACK)
                                 {
                                     // 重置 ackEvent
-                                    PlUsbBridgeManager._ackEvent.Reset();
+                                    _ackEvent.Reset();
                                     Logger.Info("[DataSender] 等待ACK...");
                                     // 等待一定超时时间 & 或收到取消消息
-                                    bool signaled = PlUsbBridgeManager._ackEvent.Wait(Constants.ACK_TIMEOUT_MS, _waitAckToken);
+                                    bool signaled = _ackEvent.Wait(Constants.ACK_TIMEOUT_MS, _waitAckToken);
                                     if (!signaled)
                                     {
                                         // --> 超时

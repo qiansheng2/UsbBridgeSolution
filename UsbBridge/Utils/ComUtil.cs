@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Isc.Yft.UsbBridge.Models;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -69,6 +71,102 @@ namespace Isc.Yft.UsbBridge.Utils
             }
 
             return source;
+        }
+
+        /// <summary>
+        /// 执行指定的命令行，并返回执行结果。
+        /// </summary>
+        /// <param name="command">要执行的命令。</param>
+        /// <param name="timeout">命令的超时时间（毫秒）。</param>
+        /// <returns>返回命令执行的标准输出结果字符串。</returns>
+        public static string ExecuteCommand(string command, int timeout)
+        {
+            if (string.IsNullOrWhiteSpace(command))
+            {
+                throw new ArgumentException("命令不能为空或仅包含空白字符。", nameof(command));
+            }
+
+            // 初始化结果变量
+            StringBuilder output = new StringBuilder();
+            StringBuilder error = new StringBuilder();
+            if (timeout == 0)
+            {
+                // 如果Timeout时间设置为0，则为最大等待时间
+                timeout = Constants.PROCESS_MAX_EXECUTE_MS;
+            }
+
+            try
+            {
+                using (Process process = new Process())
+                {
+                    // 设置命令行进程信息
+                    process.StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "cmd.exe",                  // 使用 cmd.exe 执行命令
+                        Arguments = $"/c {command}",          // /c 表示执行完命令后关闭
+                        RedirectStandardOutput = true,        // 重定向标准输出
+                        RedirectStandardError = true,         // 重定向标准错误
+                        UseShellExecute = false,              // 不使用操作系统外壳程序
+                        CreateNoWindow = true,                // 不创建窗口
+                        StandardOutputEncoding = Encoding.UTF8, // 确保输出是 UTF-8 编码
+                        StandardErrorEncoding = Encoding.UTF8
+                    };
+
+                    // 订阅输出和错误流的事件
+                    process.OutputDataReceived += (sender, args) =>
+                    {
+                        if (args.Data != null) output.AppendLine(args.Data);
+                    };
+
+                    process.ErrorDataReceived += (sender, args) =>
+                    {
+                        if (args.Data != null) error.AppendLine(args.Data);
+                    };
+
+                    // 启动进程
+                    process.Start();
+
+                    // 异步读取标准输出和错误流
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+
+                    // 等待命令执行完成或超时
+                    if (!process.WaitForExit(timeout))
+                    {
+                        // 如果超时则终止进程
+                        process.Kill();
+                        throw new TimeoutException($"命令执行超时，命令: {command}");
+                    }
+
+                    // 检查进程的退出码
+                    if (process.ExitCode != 0)
+                    {
+                        throw new InvalidOperationException(
+                            $"命令执行失败，退出码: {process.ExitCode}, 错误信息: {error.ToString().Trim()}");
+                    }
+
+                    // 返回标准输出结果
+                    return output.ToString().Trim();
+                }
+            }
+            catch (TimeoutException tex)
+            {
+                // 捕获超时异常
+                Console.Error.WriteLine($"[CommandExecutor] 超时: {tex.Message}");
+                throw;
+            }
+            catch (InvalidOperationException iex)
+            {
+                // 捕获命令执行失败异常
+                Console.Error.WriteLine($"[CommandExecutor] 命令执行失败: {iex.Message}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // 捕获所有其他异常
+                Console.Error.WriteLine($"[CommandExecutor] 未知错误: {ex.Message}");
+                throw new InvalidOperationException($"执行命令时发生未知错误: {ex.Message}", ex);
+            }
         }
     }
 }

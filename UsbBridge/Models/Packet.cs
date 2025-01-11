@@ -108,10 +108,10 @@ namespace Isc.Yft.UsbBridge.Models
             Content = new byte[contentLength];
 
             // 1. 校验并拷贝 messageId
-            Array.Copy( ComUtil.Resize(messageId,16), MessageId, MessageId.Length);
+            Array.Copy(ComUtil.Resize(messageId,16), MessageId, MessageId.Length);
 
             // 2. 校验并拷贝 reserved
-            Array.Copy( ComUtil.Resize(reserved, 16), Reserved, Reserved.Length);
+            Array.Copy(ComUtil.Resize(reserved, 16), Reserved, Reserved.Length);
 
             // 3. 分配并拷贝 content (可变长)
             Array.Copy(ComUtil.Resize(content, ContentLength), Content, Content.Length);
@@ -327,7 +327,7 @@ namespace Isc.Yft.UsbBridge.Models
             if (MessageId == null || MessageId.Length != 16)
                 return "Invalid MessageId";
 
-            return System.Text.Encoding.ASCII.GetString(MessageId);
+            return System.Text.Encoding.UTF8.GetString(MessageId);
         }
 
         // 辅助方法：格式化 Reserved 为带空格的 00 00 形式

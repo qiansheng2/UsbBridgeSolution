@@ -151,17 +151,17 @@ namespace Isc.Yft.UsbBridge.Devices
                                     // 检查方向
                                     if ((endpoint.bEndpointAddress & Constants.LIBUSB_ENDPOINT_DIR_MASK) == Constants.LIBUSB_ENDPOINT_IN)
                                     {
-                                        Logger.Info($" at address = 0x{endpoint.bEndpointAddress:X2} (IN)");
+                                        Logger.Info($"                         at address = 0x{endpoint.bEndpointAddress:X2} (IN)");
                                         _temp_info.BulkInAddress = endpoint.bEndpointAddress;
                                     }
                                     else if ((endpoint.bEndpointAddress & Constants.LIBUSB_ENDPOINT_DIR_MASK) == Constants.LIBUSB_ENDPOINT_OUT)
                                     {
-                                        Logger.Info($" at address = 0x{endpoint.bEndpointAddress:X2} (OUT)");
+                                        Logger.Info($"                         at address = 0x{endpoint.bEndpointAddress:X2} (OUT)");
                                         _temp_info.BulkOutAddress = endpoint.bEndpointAddress;
                                     }
                                     else
                                     {
-                                        Logger.Info($" at address = 0x{endpoint.bEndpointAddress:X2} (Unknown Direction)");
+                                        Logger.Info($"                         at address = 0x{endpoint.bEndpointAddress:X2} (Unknown Direction)");
                                     }
                                 }
                             }
