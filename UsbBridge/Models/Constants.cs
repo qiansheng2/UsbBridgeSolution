@@ -11,7 +11,7 @@ namespace Isc.Yft.UsbBridge.Models
         #region 系统运行常量
         public const int THREAD_SWITCH_SLEEP_TIME = 4000;           // 线程切换等待常量，毫秒
         public const int STOP_THREAD_WAIT_TIME = 10000;             // 关闭线程时的等待时间，毫秒
-        public const int ACK_TIMEOUT_MS = 5000;                     // 发送数据后，等待ack返回的时间，毫秒
+        public const int ACK_TIMEOUT_MS = 50000;                    // 发送数据后，等待ack返回的时间，毫秒
         public const int PROCESS_MAX_EXECUTE_MS = 300 * 1000;       // Command命令执行的最长等待时间，毫秒
         #endregion
 
