@@ -53,7 +53,7 @@ namespace Isc.Yft.UsbBridge.Threading
                     // 获取拷贝线的最新状态信息
                     _usbCopyline.OpenCopyline();
                     _usbCopyline.UpdateCopylineStatus();
-                    if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.OFFLINE) {
+                    if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.ONLINE) {
                         USBMode mode = _manager.GetCurrentMode();
                         Logger.Info($"[DataMonitor] 当前USB模式：{mode}.");
                     }
