@@ -23,6 +23,7 @@ namespace Isc.Yft.UsbBridge.Threading
         {
             _token = token;
             _usbCopyline = usbCopyline;
+
         }
 
         public Task RunAsync()

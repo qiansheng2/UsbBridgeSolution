@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Isc.Yft.UsbBridge.Threading;
 using NLog;
+using System.Collections.Concurrent;
 
 namespace Isc.Yft.UsbBridge.Handler
 {
@@ -18,7 +19,7 @@ namespace Isc.Yft.UsbBridge.Handler
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         // 存储包类型与处理器的映射
-        private static readonly Dictionary<EPacketType, IPacketHandler> Handlers = new Dictionary<EPacketType, IPacketHandler>();
+        private static readonly ConcurrentDictionary<EPacketType, IPacketHandler> Handlers = new ConcurrentDictionary<EPacketType, IPacketHandler>();
 
         /// <summary>
         /// 静态构造函数，用于初始化默认处理器
@@ -32,23 +33,22 @@ namespace Isc.Yft.UsbBridge.Handler
         /// </summary>
         /// <param name="packetType">包类型</param>
         /// <param name="handler">处理器实例</param>
-        public static void RegisterHandler(EPacketType packetType, IPacketHandler handler)
+        public static void RegisterHandler(EPacketType packetType, IPacketHandler handler, bool allowOverride = true)
         {
             if (handler == null)
             {
-                throw new ArgumentNullException(nameof(handler), "处理器不能为空。");
+                Logger.Error($"尝试注册包类型 {packetType} 时，处理器为 null。");
+                return;
             }
 
-            lock (Handlers)
+            if (!allowOverride && Handlers.ContainsKey(packetType))
             {
-                if (Handlers.ContainsKey(packetType))
-                {
-                    Logger.Warn($"包类型 {packetType} 的处理器已存在，将覆盖现有处理器。");
-                }
-
-                Handlers[packetType] = handler;
-                Logger.Info($"包类型 {packetType} 的处理器已成功注册。");
+                Logger.Warn($"包类型 {packetType} 的处理器已存在，拒绝覆盖现有处理器。");
+                return;
             }
+
+            Handlers[packetType] = handler;
+            Logger.Info($"包类型 {packetType} 的处理器已成功注册。");
         }
 
         /// <summary>

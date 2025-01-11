@@ -9,7 +9,6 @@ using NLog;
 
 namespace Isc.Yft.UsbBridgeTest
 {
-
     internal class Test
     {
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
@@ -91,7 +90,6 @@ namespace Isc.Yft.UsbBridgeTest
                     Logger.Info($"[Main] 模式已切换为: [{mode}].");
 
                     for(int i=0; i<100; i++){
-
                         Logger.Info($"发送第{i + 1}次数据...");
                         // 发送一些测试数据
                         byte[] dummyData2 = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };

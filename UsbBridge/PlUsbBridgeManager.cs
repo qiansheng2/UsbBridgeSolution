@@ -46,11 +46,21 @@ namespace Isc.Yft.UsbBridge
         // 具体的对拷线控制实例 (PL25A1,PL27A1等)
         private readonly ICopyline _usbCopyline;
 
+        // 数据包处理器
+        private CommandPacketHandler _commandPacketHandler;
+        private CommandAckPacketHandler _commandAckPacketHandler;
+
         public PlUsbBridgeManager()
         {
             // 这里决定用哪个芯片控制类
             // _usbCopyline = new Pl25A1UsbCopyline();
             _usbCopyline = new Pl27A7UsbCopyline();
+
+            // 初始化包处理器，注册处理器
+            _commandPacketHandler = new CommandPacketHandler(this);
+            PacketHandlerFactory.RegisterHandler(EPacketType.CMD, _commandPacketHandler);
+            _commandAckPacketHandler = new CommandAckPacketHandler();
+            PacketHandlerFactory.RegisterHandler(EPacketType.CMD_ACK, _commandAckPacketHandler);
         }
 
         // 析构函数
