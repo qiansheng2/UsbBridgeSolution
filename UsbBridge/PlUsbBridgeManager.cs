@@ -10,7 +10,6 @@ using Isc.Yft.UsbBridge.Utils;
 using System.Linq;
 using System.Text;
 using Isc.Yft.UsbBridge.Exceptions;
-using static System.Net.Mime.MediaTypeNames;
 using Isc.Yft.UsbBridge.Handler;
 
 namespace Isc.Yft.UsbBridge
@@ -18,6 +17,10 @@ namespace Isc.Yft.UsbBridge
     internal class PlUsbBridgeManager:IDisposable
     {
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
+        // 用于记录当前USB工作模式
+        public USBMode CurrentMode { get; set; } = new USBMode(EUSBPosition.OUTSIDE, EUSBDirection.UPLOAD);
+
         private bool _disposed = false;
 
         // 三个后台任务引用
@@ -40,9 +43,6 @@ namespace Isc.Yft.UsbBridge
         // 订阅核心错误发生状况，用于往更上一层报告错误信息
         public event EventHandler<InvalidHardwareException> FatalErrorOccurred;
 
-        // 用于记录当前USB工作模式
-        private USBMode _currentMode = new USBMode(EUSBPosition.OUTSIDE, EUSBDirection.UPLOAD);
-
         // 具体的对拷线控制实例 (PL25A1,PL27A1等)
         private readonly ICopyline _usbCopyline;
 
@@ -50,11 +50,14 @@ namespace Isc.Yft.UsbBridge
         private CommandPacketHandler _commandPacketHandler;
         private CommandAckPacketHandler _commandAckPacketHandler;
 
-        public PlUsbBridgeManager()
+        public PlUsbBridgeManager(USBMode mode)
         {
             // 这里决定用哪个芯片控制类
             // _usbCopyline = new Pl25A1UsbCopyline();
             _usbCopyline = new Pl27A7UsbCopyline();
+
+            // 模式设置
+            CurrentMode = mode;
 
             // 初始化包处理器，注册处理器
             _commandPacketHandler = new CommandPacketHandler(this);
@@ -377,21 +380,10 @@ namespace Isc.Yft.UsbBridge
             return ret;
         }
 
-        public void SetMode(USBMode uSBMode)
-        {
-            _currentMode = uSBMode;
-            Logger.Info($"[Main] SetMode = {uSBMode}");
-        }
-
-        public USBMode GetCurrentMode()
-        {
-            return _currentMode;
-        }
-
         public async Task<Result<String>> SendCommand(String command)
         {
 
-            if (_currentMode.Position == EUSBPosition.INSIDE)
+            if (CurrentMode.Position == EUSBPosition.INSIDE)
             {
                 return Result<String>.Failure(1301, "内网电脑不能发送命令。");
             }

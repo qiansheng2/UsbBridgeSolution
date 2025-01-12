@@ -13,12 +13,15 @@ namespace Isc.Yft.UsbBridge
     {
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
+        // Usb拷贝线工作模式
+        public USBMode CurrentMode { get; set; }
+
         // 简单起见，把管理逻辑放到 PlUsbBridgeManager
         private PlUsbBridgeManager _manager;
 
-        public PlUsbBridge()
+        public PlUsbBridge(USBMode mode)
         {
-            _manager = new PlUsbBridgeManager();
+            _manager = new PlUsbBridgeManager(mode);
             // 订阅 Manager 的致命错误事件
             _manager.FatalErrorOccurred += Manager_FatalErrorOccurred;
         }
@@ -39,7 +42,8 @@ namespace Isc.Yft.UsbBridge
             //   - 释放bridge资源
             //   - 重启桥接
             Stop();
-            _manager = new PlUsbBridgeManager();
+            USBMode currentMode = CurrentMode;
+            _manager = new PlUsbBridgeManager(currentMode);
             _manager.FatalErrorOccurred += Manager_FatalErrorOccurred;
             Start();
         }
@@ -62,16 +66,6 @@ namespace Isc.Yft.UsbBridge
         {
             Result<string> ret = await _manager.SendBigData(owner, data);
             return ret;
-        }
-
-        public void SetMode(USBMode mode)
-        {
-            _manager.SetMode(mode);
-        }
-
-        public USBMode GetCurrentMode()
-        {
-            return _manager.GetCurrentMode();
         }
 
         public async Task<Result<String>> SendCommand(String command)

@@ -54,8 +54,7 @@ namespace Isc.Yft.UsbBridge.Threading
                     _usbCopyline.OpenCopyline();
                     _usbCopyline.UpdateCopylineStatus();
                     if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.ONLINE) {
-                        USBMode mode = _manager.GetCurrentMode();
-                        Logger.Info($"[DataMonitor] 当前USB模式：{mode}.");
+                        Logger.Info($"[DataMonitor] 当前USB模式：{_manager.CurrentMode}.");
                     }
                     else
                     {

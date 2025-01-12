@@ -10,6 +10,11 @@ namespace Isc.Yft.UsbBridge.Interfaces
     public interface IUsbBridge : IDisposable
     {
         /// <summary>
+        /// USB 模式
+        /// </summary>
+        USBMode CurrentMode { get; set; }
+
+        /// <summary>
         /// 初始化并启动所有线程（发送、接收、监控）
         /// </summary>
         void Start();
@@ -24,19 +29,6 @@ namespace Isc.Yft.UsbBridge.Interfaces
         /// </summary>
         /// <param name="data">待发送的字节数组</param>
         Task<Result<string>> SendBigData(EPacketOwner owner, byte[] data);
-
-        /// <summary>
-        /// 设定或更改数据线的工作模式
-        /// （例如切换到某种特殊协议或速率）
-        /// </summary>
-        /// <param name="mode">可以是一个枚举，或字符串等</param>
-        void SetMode(USBMode mode);
-
-        /// <summary>
-        /// 获取当前工作模式
-        /// </summary>
-        /// <returns>返回当前模式的描述</returns>
-        USBMode GetCurrentMode();
 
         /// <summary>
         /// 外网向内网机器发送命令，并获取命令执行结果

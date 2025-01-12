@@ -1,27 +1,24 @@
-﻿using Isc.Yft.UsbBridge.Interfaces;
-using Isc.Yft.UsbBridge.Models;
-using Isc.Yft.UsbBridge.Exceptions;
-using Isc.Yft.UsbBridge;
-using System;
-using System.Threading;
+﻿using System;
 using System.Threading.Tasks;
-using NLog;
+using Isc.Yft.UsbBridge.Models;
+using Isc.Yft.UsbBridge.Interfaces;
+using Isc.Yft.UsbBridge.Exceptions;
 
-namespace Isc.Yft.UsbBridgeTest
+namespace Isc.Yft.UsbBridge.Outside
 {
-    internal class Test
+    internal class OutsideTest
     {
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
-        static async Task Main(string[] args)
+        static async Task Main()
         {
             try
             {
                 Result<string> result = new Result<string>();
 
-                Logger.Info("=== USB Bridge Test Program ===");
+                Logger.Info("=== USB Bridge === 外网端 ===");
 
                 // 创建并启动桥接
-                using (IUsbBridge bridge = new PlUsbBridge())
+                using (IUsbBridge bridge = new PlUsbBridge(new USBMode(EUSBPosition.OUTSIDE, EUSBDirection.UPLOAD)))
                 {
                     bridge.Start();
                     Logger.Info("[Main] Bridge 已启动.");
@@ -51,13 +48,6 @@ namespace Isc.Yft.UsbBridgeTest
                     // 再等待一段时间
                     await Task.Delay(4000000);
 
-
-
-
-                    // 显示当前USB运行模式
-                    Logger.Info($"[Main] 当前USB运行模式为: [{bridge.GetCurrentMode()}].");
-                    
-
                     // 发送一些测试数据
                     byte[] dummyData = { 0x01, 0x02, 0x03, 0x04, 0x05 };
                     try
@@ -86,10 +76,11 @@ namespace Isc.Yft.UsbBridgeTest
 
                     // 切换模式
                     USBMode mode = new USBMode(EUSBPosition.OUTSIDE, EUSBDirection.UPLOAD);
-                    bridge.SetMode(mode);
+                    bridge.CurrentMode = mode;
                     Logger.Info($"[Main] 模式已切换为: [{mode}].");
 
-                    for(int i=0; i<100; i++){
+                    for (int i = 0; i < 100; i++)
+                    {
                         Logger.Info($"发送第{i + 1}次数据...");
                         // 发送一些测试数据
                         byte[] dummyData2 = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
@@ -134,7 +125,7 @@ namespace Isc.Yft.UsbBridgeTest
                             Logger.Warn($"[Main] SendCommand 执行失败，错误信息: [{result.ErrorCode}] {result.ErrorMessage}");
                         }
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         // 捕获异常
                         Logger.Error($"[Main] SendCommand 执行时发生异常: {ex.Message}");

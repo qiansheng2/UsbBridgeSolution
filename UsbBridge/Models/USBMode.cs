@@ -23,26 +23,14 @@ namespace Isc.Yft.UsbBridge.Models
         public EUSBDirection Direction { get; set; } = EUSBDirection.UPLOAD;
 
         /// <summary>
-        /// USB设备是否存在
-        /// </summary>
-        public bool FoundDevice { get; set; } = false;
-
-        /// <summary>
-        /// 空的构造函数
-        /// </summary>
-        public USBMode() { }
-
-        /// <summary>
         /// 构造函数
         /// </summary>
         /// <param name="usbPosition">USB 工作环境</param>
         /// <param name="usbDirection">USB 工作状态</param>
-        public USBMode(EUSBPosition usbPosition, EUSBDirection usbDirection,
-                       bool foundDevice = false)
+        public USBMode(EUSBPosition usbPosition, EUSBDirection usbDirection)
         {
             Position = usbPosition;
             Direction = usbDirection;
-            FoundDevice = foundDevice;
         }
 
         /// <summary>
