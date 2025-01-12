@@ -19,7 +19,7 @@ namespace Isc.Yft.UsbBridge.Threading
         // 当监控出现致命错误时触发
         public event EventHandler<InvalidHardwareException> FatalErrorOccurred;
 
-        public DataReceiver(SendRequest sendRequest, CancellationToken token, ICopyline usbCopyline)
+        public DataReceiver(CancellationToken token, ICopyline usbCopyline)
         {
             _token = token;
             _usbCopyline = usbCopyline;

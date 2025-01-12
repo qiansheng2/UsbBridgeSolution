@@ -49,6 +49,7 @@ namespace Isc.Yft.UsbBridge
         // 数据包处理器
         private CommandPacketHandler _commandPacketHandler;
         private CommandAckPacketHandler _commandAckPacketHandler;
+        private DataAckPacketHandler _dataAckPacketHandler;
 
         public PlUsbBridgeManager(USBMode mode)
         {
@@ -64,6 +65,8 @@ namespace Isc.Yft.UsbBridge
             PacketHandlerFactory.RegisterHandler(EPacketType.CMD, _commandPacketHandler);
             _commandAckPacketHandler = new CommandAckPacketHandler();
             PacketHandlerFactory.RegisterHandler(EPacketType.CMD_ACK, _commandAckPacketHandler);
+            _dataAckPacketHandler = new DataAckPacketHandler();
+            PacketHandlerFactory.RegisterHandler(EPacketType.DATA_ACK, _dataAckPacketHandler);
         }
 
         // 析构函数
@@ -124,7 +127,7 @@ namespace Isc.Yft.UsbBridge
             try
             {
                 // 实例化三个后台角色，并将 _syncUSBLock 传入
-                _dataReceiver = new DataReceiver(_sendRequest, _backend_cts.Token, _usbCopyline);
+                _dataReceiver = new DataReceiver(_backend_cts.Token, _usbCopyline);
                 _dataReceiver.FatalErrorOccurred += Receiver_FatalErrorOccurred;
                 IPacketHandler handler = PacketHandlerFactory.GetHandler(EPacketType.CMD_ACK);
 

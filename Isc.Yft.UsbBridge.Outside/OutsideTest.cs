@@ -25,9 +25,8 @@ namespace Isc.Yft.UsbBridge.Outside
 
                     try
                     {
-
                         // 等待 SendCommand 完成并获取返回值
-                        result = await bridge.SendCommand("dir");
+                        result = await bridge.SendCommand("{\"Command\": \"echo Hello World\", \"Timeout\": 5000}");
 
                         // 判断返回结果
                         if (result.IsSuccess)

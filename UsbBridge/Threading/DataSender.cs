@@ -21,20 +21,12 @@ namespace Isc.Yft.UsbBridge.Threading
         // ACK 事件
         internal static ManualResetEventSlim _ackEvent = new ManualResetEventSlim(false);
 
-        // 事件处理器
-        private readonly DataAckPacketHandler _dataAckPacketHandler;
-
         public DataSender(SendRequest request, CancellationToken token, ICopyline usbCopyline)
         {
             _request = request;
             _waitAckToken = token;
             _usbCopyline = usbCopyline;
             _ackEvent = new ManualResetEventSlim(false);
-
-            // DATA_ACK 包处理器定义和注册
-            _dataAckPacketHandler = new DataAckPacketHandler();
-            //_dataAckPacketHandler.AckReceived += OnAckReceived;
-            PacketHandlerFactory.RegisterHandler(EPacketType.DATA_ACK, _dataAckPacketHandler);
         }
 
         public Result<string> RunSendData()
