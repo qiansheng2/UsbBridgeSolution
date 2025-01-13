@@ -116,7 +116,7 @@ namespace Isc.Yft.UsbBridge.Devices
 
                     if (ret < 0)
                     {
-                        Logger.Error($"[{Info.Name}] 读数据失败，libusb_bulk_transfer 返回: {ret}");
+                        Logger.Error($"[{Info.Name}] 读数据失败，libusb_bulk_transfer 返回: {ComUtil.get_libusb_error_name(ret)}");
                         return 0;
                     }
 

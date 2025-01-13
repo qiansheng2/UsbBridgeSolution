@@ -168,5 +168,26 @@ namespace Isc.Yft.UsbBridge.Utils
                 throw new InvalidOperationException($"执行命令时发生未知错误: {ex.Message}", ex);
             }
         }
+
+        /// <summary>
+        /// 获取libusb的错误信息
+        /// </summary>
+        /// <param name="errorCode">错误代码</param>
+        /// <returns>错误信息</returns>
+        public static string get_libusb_error_name(int errorCode)
+        {
+            string errMsg;
+            IntPtr errorNamePtr = LibusbInterop.libusb_error_name(errorCode);
+            if (errorNamePtr != IntPtr.Zero)
+            {
+                // 将非托管指针转换为托管字符串
+                errMsg = Marshal.PtrToStringAnsi(errorNamePtr);
+            }
+            else
+            {
+                errMsg = "未知的libusb错误";
+            }
+            return errMsg;
+        }
     }
 }

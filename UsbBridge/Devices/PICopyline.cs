@@ -74,7 +74,7 @@ namespace Isc.Yft.UsbBridge.Devices
                     int result = LibusbInterop.libusb_get_device_descriptor(devicePtr, out deviceDesc);
                     if (result != 0)
                     {
-                        throw new InvalidOperationException($"获取设备描述符失败: {get_libusb_error_name(result)}");
+                        throw new InvalidOperationException($"获取设备描述符失败: {ComUtil.get_libusb_error_name(result)}");
                     }
                     // 打印设备信息
                     // Logger.Info($"VID:{deviceDesc.idVendor:X4},PID:{deviceDesc.idProduct:X4}");
@@ -104,14 +104,14 @@ namespace Isc.Yft.UsbBridge.Devices
                         result = LibusbInterop.libusb_open(devicePtr, out _localDeviceHandle);
                         if (result != 0 || _localDeviceHandle == IntPtr.Zero)
                         {
-                            throw new InvalidOperationException($"[libusb_open 打开目标USB设备失败: {get_libusb_error_name(result)}");
+                            throw new InvalidOperationException($"[libusb_open 打开目标USB设备失败: {ComUtil.get_libusb_error_name(result)}");
                         }
 
                         // 获取配置描述符
                         result = LibusbInterop.libusb_get_active_config_descriptor(devicePtr, out _localCopylineConfigPtr);
                         if (result != 0 || _localCopylineConfigPtr == IntPtr.Zero)
                         {
-                            throw new InvalidOperationException($"libusb_get_active_config_descriptor获取设备描述符信息失败: {get_libusb_error_name(result)}");
+                            throw new InvalidOperationException($"libusb_get_active_config_descriptor获取设备描述符信息失败: {ComUtil.get_libusb_error_name(result)}");
                         }
                         SLibusbConfigDescriptor configDesc = Marshal.PtrToStructure<SLibusbConfigDescriptor>(_localCopylineConfigPtr);
                         Logger.Info($"    NumInterfaces = {configDesc.bNumInterfaces}");
@@ -327,14 +327,14 @@ namespace Isc.Yft.UsbBridge.Devices
                 int result = LibusbInterop.libusb_claim_interface(_deviceHandle.DangerousGetHandle(), Info.BulkInterfaceNo);
                 if (result != 0)
                 {
-                    throw new InvalidOperationException($"硬件接口声明失败: {get_libusb_error_name(result)}。");
+                    throw new InvalidOperationException($"硬件接口声明失败: {ComUtil.get_libusb_error_name(result)}。");
                 }
                 // 检查本地设备和远程设备的各种状态
                 byte[] devStatusBuffer = new byte[2];
                 int byteCounts = LibusbInterop.libusb_control_transfer(_deviceHandle.DangerousGetHandle(), 0xC0, 0xF1, 0, 0, devStatusBuffer, 2, Constants.BULK_TIMEOUT_MS);
                 if (byteCounts < 0)
                 {
-                    throw new InvalidOperationException($"获取[{Info.Name}]设备状态失败: {get_libusb_error_name(byteCounts)}。");
+                    throw new InvalidOperationException($"获取[{Info.Name}]设备状态失败: {ComUtil.get_libusb_error_name(byteCounts)}。");
                 }
                 else
                 {
@@ -388,22 +388,6 @@ namespace Isc.Yft.UsbBridge.Devices
             Exit();
         }
 
-        private string get_libusb_error_name(int errorCode)
-        {
-            string errMsg;
-            IntPtr errorNamePtr = LibusbInterop.libusb_error_name(errorCode);
-            if (errorNamePtr != IntPtr.Zero)
-            {
-                // 将非托管指针转换为托管字符串
-                errMsg = Marshal.PtrToStringAnsi(errorNamePtr); 
-            }
-            else
-            {
-                errMsg = "未知的libusb错误";
-            }
-            return errMsg;
-        }
-
         /// <summary>
         /// 首次 flush: 读取并抛弃缓冲区中残留数据
         /// </summary>
@@ -418,7 +402,7 @@ namespace Isc.Yft.UsbBridge.Devices
                 int result = LibusbInterop.libusb_claim_interface(_deviceHandle.DangerousGetHandle(), Info.BulkInterfaceNo);
                 if (result != 0)
                 {
-                    Logger.Error($"[{Info.Name}] FlushOnce()中，硬件接口声明失败: {get_libusb_error_name(result)}");
+                    Logger.Error($"[{Info.Name}] FlushOnce()中，硬件接口声明失败: {ComUtil.get_libusb_error_name(result)}");
                     return;
                 }
 
@@ -433,7 +417,7 @@ namespace Isc.Yft.UsbBridge.Devices
 
                 if (ret < 0)
                 {
-                    Logger.Warn($"[{Info.Name}] FlushOnce()读数据失败，libusb_bulk_transfer()返回: {get_libusb_error_name(ret)}");
+                    Logger.Warn($"[{Info.Name}] FlushOnce()读数据失败，libusb_bulk_transfer()返回: {ComUtil.get_libusb_error_name(ret)}");
                 }
                 else
                 {
