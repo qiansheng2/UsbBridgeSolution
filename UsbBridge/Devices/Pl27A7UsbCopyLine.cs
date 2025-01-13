@@ -94,7 +94,7 @@ namespace Isc.Yft.UsbBridge.Devices
                 return 0;
             }
 
-            if (_deviceHandle.IsInvalid)
+            if (_deviceHandle == null || _deviceHandle.IsInvalid)
             {
                 Logger.Error($"[{Info.Name}] 设备尚未打开，无法读取数据.");
                 return 0;

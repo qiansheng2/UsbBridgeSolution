@@ -83,7 +83,7 @@ namespace Isc.Yft.UsbBridge.Models
         public byte[] Crc32 { get; set; } = new byte[4];
 
         // ============== 构造函数 ==============
-        public Packet() { }
+        private Packet() { }
 
         public Packet(byte version,
                       EPacketOwner owner,
@@ -190,10 +190,10 @@ namespace Isc.Yft.UsbBridge.Models
         /// <summary>
         /// 从读入的二进制数组中解析出Packet
         /// </summary>
-        public Packet FromBytes(byte[] buf)
+        public static Packet FromBytes(byte[] buf)
         {
-            if (buf == null)
-                throw new ArgumentException("数据为空，无法转换为数据包！");
+            if (buf == null || buf.Length<(1024-Constants.CONTENT_MAX_SIZE))
+                throw new ArgumentException($"数据为空或数据字节数少于{1024-Constants.CONTENT_MAX_SIZE}字节，无法转换为数据包！");
 
             Packet packet = new Packet();
             uint offset = 0;
@@ -252,6 +252,18 @@ namespace Isc.Yft.UsbBridge.Models
             packet.Crc32 = new byte[4];
             Array.Copy(buf, offset, packet.Crc32, 0, 4); 
             offset += 4;
+
+            // ===== 验证 CRC32 值是否正确 =====
+            // 提取用于计算 CRC 的数据部分（从 buf 的开头到 CRC 字段的前一个字节）
+            byte[] crcData = new byte[buf.Length - 4]; // 排除最后的 4 字节 CRC
+            Array.Copy(buf, 0, crcData, 0, buf.Length - 4);
+            // 提取原始 CRC32 值并转换为 uint
+            uint originalCrc32 = BitConverter.ToUInt32(packet.Crc32, 0);
+            // 验证 CRC32 值
+            if ( !Crc32Util.ValidateCrc32(crcData, originalCrc32) )
+            {
+                throw new InvalidOperationException($"数据包组装过程中，CRC32校验失败！{packet.Type}，{packet.MessageId}");
+            }
 
             return packet;
         }
@@ -347,19 +359,20 @@ namespace Isc.Yft.UsbBridge.Models
                 return "null";
             }
 
+            int cutLength = 60;
             try
             {
                 // 将 Content 字段解码为 UTF-8 字符串
                 string utfString = System.Text.Encoding.UTF8.GetString(Content);
 
-                // 如果字符串长度超过 20 个字符，截取前 20 个字符并加省略号
-                return utfString.Length > 20 ? utfString.Substring(0, 20) + "..." : utfString;
+                // 如果字符串长度超过 cutLength 个字符，截取前 cutLength 个字符并加省略号
+                return utfString.Length > cutLength ? utfString.Substring(0, cutLength) + "..." : utfString;
             }
             catch (Exception ex)
             {
                 // 如果解码失败，返回十六进制预览
                 Logger.Warn($"Content 解码失败: {ex.Message}");
-                return BitConverter.ToString(Content, 0, Math.Min(Content.Length, 30)).Replace("-", " ") + (Content.Length > 30 ? " ..." : "");
+                return BitConverter.ToString(Content, 0, Math.Min(Content.Length, cutLength)).Replace("-", " ") + (Content.Length > cutLength ? " ..." : "");
             }
         }
     }

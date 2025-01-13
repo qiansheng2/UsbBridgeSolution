@@ -6,6 +6,7 @@ using Isc.Yft.UsbBridge.Utils;
 using Isc.Yft.UsbBridge.Exceptions;
 using System.Runtime.ExceptionServices;
 using System.Security;
+using Isc.Yft.UsbBridge.Threading;
 
 namespace Isc.Yft.UsbBridge.Devices
 {
@@ -21,8 +22,11 @@ namespace Isc.Yft.UsbBridge.Devices
         public abstract int WriteDataToDevice(byte[] data);
 
         public abstract int ReadDataFromDevice(byte[] buffer);
-        public virtual CopylineInfo Info { get; }  // VendorID / ProductID (需要根据实际对拷线数据覆盖)
+        public virtual CopylineInfo Info { get; }  // 硬件信息 VendorID / ProductID (需要根据实际对拷线数据覆盖)
         public virtual CopylineStatus Status { get; }
+
+        // 该usb拷贝线是否已经读取并废弃了缓存
+        private bool _flushed = false;
 
         public void Initialize()
         {
@@ -263,6 +267,8 @@ namespace Isc.Yft.UsbBridge.Devices
                         {
                             // 获取到USB设备的有效句柄
                             Logger.Info($"USB设备打开成功(libusb_open_device_with_vid_pid())。");
+                            // 读取缓存并废弃
+                            FlushOnce();
                         }
                     }
                     else
@@ -396,6 +402,51 @@ namespace Isc.Yft.UsbBridge.Devices
                 errMsg = "未知的libusb错误";
             }
             return errMsg;
+        }
+
+        /// <summary>
+        /// 首次 flush: 读取并抛弃缓冲区中残留数据
+        /// </summary>
+        private void FlushOnce()
+        {
+            if (!_flushed)
+            {
+                // 设备指针无效则退出
+                if (_deviceHandle == null) return;
+
+                byte[] flushBuf = new byte[1024 * 10];
+                int result = LibusbInterop.libusb_claim_interface(_deviceHandle.DangerousGetHandle(), Info.BulkInterfaceNo);
+                if (result != 0)
+                {
+                    Logger.Error($"[{Info.Name}] FlushOnce()中，硬件接口声明失败: {get_libusb_error_name(result)}");
+                    return;
+                }
+
+                int ret = LibusbInterop.libusb_bulk_transfer(
+                                                _deviceHandle.DangerousGetHandle(),
+                                                Info.BulkInAddress,
+                                                flushBuf,
+                                                flushBuf.Length,
+                                                out int transferred,
+                                                Constants.BULK_TIMEOUT_MS
+                                            );
+
+                if (ret < 0)
+                {
+                    Logger.Error($"[{Info.Name}] FlushOnce()读数据失败，libusb_bulk_transfer 返回: {get_libusb_error_name(ret)}");
+                }
+                else
+                {
+                    // 设置flush标志
+                    _flushed = true;
+                    Logger.Info($"[{Info.Name}] FlushOnce()已读取 {transferred} 字节.");
+                }
+
+                if (!_deviceHandle.IsInvalid)
+                {
+                    LibusbInterop.libusb_release_interface(_deviceHandle.DangerousGetHandle(), Info.BulkInterfaceNo);
+                }
+            }
         }
     }
 }

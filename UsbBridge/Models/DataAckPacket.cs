@@ -9,10 +9,8 @@ namespace Isc.Yft.UsbBridge.Models
 {
     internal class DataAckPacket : Packet
     {
-        private DataAckPacket():base()
-        { }
-
-        public DataAckPacket(byte version,
+        public DataAckPacket(
+                            byte version,
                             EPacketOwner owner,
                             uint totalCount,
                             uint index,
@@ -20,7 +18,8 @@ namespace Isc.Yft.UsbBridge.Models
                             uint contentLength,
                             byte[] messageId,
                             byte[] reserved,
-                            byte[] content) :
+                            byte[] content
+            ) :
         base(version, owner, EPacketType.DATA_ACK, totalCount, index, totalLength,
             contentLength, messageId, reserved, content)
         {
@@ -35,18 +34,17 @@ namespace Isc.Yft.UsbBridge.Models
         public DataAckPacket Create(DataPacket dataPacket)
         {
             DataAckPacket dataAckPacket = new DataAckPacket
-            {
-                Version = dataPacket.Version,
-                Owner = dataPacket.Owner,
-                Type = EPacketType.DATA_ACK,
-                TotalCount = 1,
-                Index = 1,
-                TotalLength = dataPacket.TotalLength,
-                ContentLength = dataPacket.ContentLength,
-                MessageId = dataPacket.MessageId,
-                Reserved = dataPacket.Reserved,
-                Content = Encoding.UTF8.GetBytes("")
-            };
+            (
+                dataPacket.Version,
+                dataPacket.Owner,
+                1,
+                1,
+                dataPacket.TotalLength,
+                dataPacket.ContentLength,
+                dataPacket.MessageId,
+                dataPacket.Reserved,
+                Encoding.UTF8.GetBytes("")
+            );
 
             return dataAckPacket;
         }

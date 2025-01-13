@@ -129,6 +129,7 @@ namespace Isc.Yft.UsbBridge
             {
                 // 实例化三个后台角色，并将 _syncUSBLock 传入
                 _dataReceiver = new DataReceiver(_backend_cts.Token, _usbCopyline);
+
                 _dataReceiver.FatalErrorOccurred += Receiver_FatalErrorOccurred;
                 IPacketHandler handler = PacketHandlerFactory.GetHandler(EPacketType.CMD_ACK);
 
@@ -239,18 +240,18 @@ namespace Isc.Yft.UsbBridge
                     for (int i = 0; i < reservedData.Length; i++)
                         reservedData[i] = 0x00; // 将每个字节设置为 0x00
                     Packet headPacket = new Packet
-                    {
-                        Version = Constants.VER1,
-                        Owner = owner,
-                        Type = EPacketType.HEAD,
-                        TotalCount = (uint)totalCount,
-                        Index = (uint)1,
-                        TotalLength = (uint)data.Length,
-                        ContentLength = (uint)0,
-                        MessageId = messageId,
-                        Reserved = new byte[16],
-                        Content = new byte[(uint)0]
-                    };
+                    (
+                        Constants.VER1,
+                        owner,
+                        EPacketType.HEAD,
+                        (uint)totalCount,
+                        (uint)1,
+                        (uint)data.Length,
+                        (uint)0,
+                        messageId,
+                        new byte[16],
+                        new byte[(uint)0]
+                    );
                     // 准备发送头数据
                     allPackets.Add(headPacket);
 
@@ -262,18 +263,18 @@ namespace Isc.Yft.UsbBridge
                         int sendSize = Math.Min(chunkSize, bytesLeft);
 
                         Packet sendPacket = new Packet
-                        {
-                            Version = Constants.VER1,
-                            Owner = owner,
-                            Type = EPacketType.DATA,
-                            TotalCount = (uint)totalCount,
-                            Index = (uint)i+1,
-                            TotalLength = (uint)data.Length,
-                            ContentLength = (uint)sendSize,
-                            MessageId = messageId,
-                            Reserved = new byte[16],
-                            Content = data
-                        };
+                        (
+                            Constants.VER1,
+                            owner,
+                            EPacketType.DATA,
+                            (uint)totalCount,
+                            (uint)i + 1,
+                            (uint)data.Length,
+                            (uint)sendSize,
+                            messageId,
+                            new byte[16],
+                            data
+                        );
 
                         // 准备发送业务数据
                         allPackets.Add(sendPacket);
@@ -286,18 +287,18 @@ namespace Isc.Yft.UsbBridge
                     String digest = Sha256DigestUtil.ComputeSha256Digest(data);
                     byte[] digestBytes = Convert.FromBase64String(digest);
                     Packet tailPacket = new Packet
-                    {
-                        Version = Constants.VER1,
-                        Owner = owner,
-                        Type = EPacketType.TAIL,
-                        TotalCount = (uint)totalCount,
-                        Index = (uint)totalCount-1,
-                        TotalLength = (uint)data.Length,
-                        ContentLength = (uint)digestBytes.Length,
-                        MessageId = messageId,
-                        Reserved = new byte[16],
-                        Content = digestBytes
-                    };
+                    (
+                        Constants.VER1,
+                        owner,
+                        EPacketType.TAIL,
+                        (uint)totalCount,
+                        (uint)totalCount - 1,
+                        (uint)data.Length,
+                        (uint)digestBytes.Length,
+                        messageId,
+                        new byte[16],
+                        digestBytes
+                    );
                     // 准备发送尾数据
                     allPackets.Add(tailPacket);
 
@@ -403,17 +404,17 @@ namespace Isc.Yft.UsbBridge
             byte[] commandBytes = ComUtil.Truncate(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(command)), Constants.CONTENT_MAX_SIZE);
 
             CommandPacket commandPacket = new CommandPacket
-            {
-                Version = Constants.VER1,
-                Owner = EPacketOwner.OUTERNET,
-                TotalCount = (uint)1,
-                Index = (uint)1,
-                TotalLength = (uint)commandBytes.Length,
-                ContentLength = (uint)commandBytes.Length,
-                MessageId = messageId,
-                Reserved = new byte[16],
-                Content = commandBytes
-            };
+            (
+                Constants.VER1,
+                EPacketOwner.OUTERNET,
+                (uint)1,
+                (uint)1,
+                (uint)commandBytes.Length,
+                (uint)commandBytes.Length,
+                messageId,
+                new byte[16],
+                commandBytes
+            );
             Logger.Debug($"{commandPacket}");
 
             SynchronizedCollection<Packet> allPackets = new SynchronizedCollection<Packet>

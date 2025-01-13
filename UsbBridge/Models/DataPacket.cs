@@ -9,11 +9,6 @@ namespace Isc.Yft.UsbBridge.Models
 {
     internal class DataPacket : Packet
     {
-        public DataPacket():base()
-        {
-            Type = EPacketType.DATA;
-        }
-
         public DataPacket(byte version,
               EPacketOwner owner,
               uint totalCount,

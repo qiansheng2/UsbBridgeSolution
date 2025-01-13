@@ -8,11 +8,6 @@ namespace Isc.Yft.UsbBridge.Models
 {
     internal class CommandPacket : Packet
     {
-        public CommandPacket() : base()
-        {
-            Type = EPacketType.CMD;
-        }
-
         public CommandPacket(byte version,
               EPacketOwner owner,
               uint totalCount,

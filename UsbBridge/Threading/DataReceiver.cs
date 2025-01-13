@@ -139,43 +139,22 @@ namespace Isc.Yft.UsbBridge.Threading
         }
 
         /// <summary>
-        /// 首次 flush: 读取并抛弃缓冲区中残留数据
-        /// </summary>
-        private void FlushOnce()
-        {
-            byte[] flushBuf = new byte[1024 * 10];
-            int flushCount = _usbCopyline.ReadDataFromDevice(flushBuf);
-            if (flushCount > 0)
-            {
-                Logger.Warn($"[DataReceiver] flush操作接收到 {flushCount} 字节, 已抛弃.");
-            }
-        }
-
-        /// <summary>
         /// 尝试将原始字节解析为一个 Packet
         /// </summary>
         private Packet TryParsePacket(byte[] buffer, int readCount)
         {
             // readCount=1024 正好是一个Packet
-            if (readCount < 32)
+            if (readCount < (1024-Constants.CONTENT_MAX_SIZE))
             {
-                // 不足以构成最小头部? 
+                // 不足以构成最小头部
                 return null;
             }
 
             // 调用 Packet.FromBytes() 解析
-            Packet packet = new Packet().FromBytes(SubArray(buffer, readCount));
+            byte[] packetArray = new byte[readCount];
+            Array.Copy(buffer, 0, packetArray, 0, readCount);
+            Packet packet = Packet.FromBytes(packetArray);
             return packet;
-        }
-
-        /// <summary>
-        /// 示例: 截取数组中前 readCount 字节
-        /// </summary>
-        private byte[] SubArray(byte[] buffer, int readCount)
-        {
-            byte[] result = new byte[readCount];
-            Array.Copy(buffer, 0, result, 0, readCount);
-            return result;
         }
 
     }
