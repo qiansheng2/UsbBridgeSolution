@@ -149,6 +149,46 @@ namespace Isc.Yft.UsbBridge.Models
             }
         }
 
+        // Bulk transfer Timeout in millisecond 
+        private uint _BULK_USB3_TIMEOUT = 1000;
+        public uint BULK_USB3_TIMEOUT
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _BULK_USB3_TIMEOUT;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    _BULK_USB3_TIMEOUT = value;
+                }
+            }
+        }
+
+        // FIFO size in PL27A7 USB device is dependent on the firmware branch the customer got
+        private int _BULK_EP1_FIFO_SIZE = 512;
+        public int BULK_EP1_FIFO_SIZE
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _BULK_EP1_FIFO_SIZE;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    _BULK_EP1_FIFO_SIZE = value;
+                }
+            }
+        }
+
         // 重写 ToString 方法
         public override string ToString()
         {

@@ -29,7 +29,9 @@ namespace Isc.Yft.UsbBridge.Devices
                 Pid = 0x25A1,
                 BulkInterfaceNo = 0,
                 BulkInAddress = 0x00,
-                BulkOutAddress = 0x00
+                BulkOutAddress = 0x00,
+                BULK_USB3_TIMEOUT = 1000,
+                BULK_EP1_FIFO_SIZE = 512
             };
 
             Status = new CopylineStatus();

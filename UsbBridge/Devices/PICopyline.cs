@@ -414,7 +414,7 @@ namespace Isc.Yft.UsbBridge.Devices
                 // 设备指针无效则退出
                 if (_deviceHandle == null) return;
 
-                byte[] flushBuf = new byte[1024 * 10];
+                byte[] flushBuf = new byte[Info.BULK_EP1_FIFO_SIZE];
                 int result = LibusbInterop.libusb_claim_interface(_deviceHandle.DangerousGetHandle(), Info.BulkInterfaceNo);
                 if (result != 0)
                 {
@@ -426,14 +426,14 @@ namespace Isc.Yft.UsbBridge.Devices
                                                 _deviceHandle.DangerousGetHandle(),
                                                 Info.BulkInAddress,
                                                 flushBuf,
-                                                flushBuf.Length,
+                                                Info.BULK_EP1_FIFO_SIZE,
                                                 out int transferred,
-                                                Constants.BULK_TIMEOUT_MS
+                                                Info.BULK_USB3_TIMEOUT
                                             );
 
                 if (ret < 0)
                 {
-                    Logger.Error($"[{Info.Name}] FlushOnce()读数据失败，libusb_bulk_transfer 返回: {get_libusb_error_name(ret)}");
+                    Logger.Warn($"[{Info.Name}] FlushOnce()读数据失败，libusb_bulk_transfer()返回: {get_libusb_error_name(ret)}");
                 }
                 else
                 {
