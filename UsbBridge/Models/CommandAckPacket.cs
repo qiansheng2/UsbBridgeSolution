@@ -20,7 +20,7 @@ namespace Isc.Yft.UsbBridge.Models
                 byte[] messageId,
                 byte[] reserved,
                 byte[] content ) :
-        base(version, owner, EPacketType.CMD, totalCount, index, totalLength,
+        base(version, owner, EPacketType.CMD_ACK, totalCount, index, totalLength,
              contentLength, messageId, reserved, content)
         {
         }
