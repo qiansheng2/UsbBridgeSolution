@@ -91,7 +91,7 @@ namespace Isc.Yft.UsbBridge.Devices
                     //    }
                     //}
                     // Logger.Info();
-
+                    
                     // 检查是否是目标设备
                     if (deviceDesc.idVendor == Info.Vid && deviceDesc.idProduct == Info.Pid)
                     {
