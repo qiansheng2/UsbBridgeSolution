@@ -62,9 +62,10 @@ namespace Isc.Yft.UsbBridge.Handler
             }
 
             Logger.Info($"CMD命令执行结果：[{commandResult}]。");
-            CommandAckPacket commandAckPacket = CommandAckPacket.CreateAck(packet, commandResult);
 
-            Result<string> ret = await _usbBridgeManager.SendCommandAck(commandAckPacket);
+            // 根据命令执行结果，返回一个Ack数据包
+            CommandAckPacket commandAckPacket = CommandAckPacket.CreateAck(packet, commandResult);
+            Result<string> ret = _usbBridgeManager.SendAckPacket(commandAckPacket);
             return ret;
 
         }

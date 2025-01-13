@@ -359,7 +359,7 @@ namespace Isc.Yft.UsbBridge.Models
             {
                 // 如果解码失败，返回十六进制预览
                 Logger.Warn($"Content 解码失败: {ex.Message}");
-                return BitConverter.ToString(Content, 0, Math.Min(Content.Length, 20)).Replace("-", " ") + (Content.Length > 20 ? " ..." : "");
+                return BitConverter.ToString(Content, 0, Math.Min(Content.Length, 30)).Replace("-", " ") + (Content.Length > 30 ? " ..." : "");
             }
         }
     }

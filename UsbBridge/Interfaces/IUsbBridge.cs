@@ -35,6 +35,6 @@ namespace Isc.Yft.UsbBridge.Interfaces
         /// </summary>
         /// <param name="command"></param>
         /// <returns></returns>
-        Task<Result<string>> SendCommand(string command);
+        Task<Result<string>> SendCommand(CommandFormat command);
     }
 }

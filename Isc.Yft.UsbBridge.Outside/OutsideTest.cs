@@ -26,7 +26,8 @@ namespace Isc.Yft.UsbBridge.Outside
                     try
                     {
                         // 等待 SendCommand 完成并获取返回值
-                        result = await bridge.SendCommand("{\"Command\": \"echo Hello World\", \"Timeout\": 5000}");
+                        CommandFormat commandFormat = new CommandFormat("echo Hello World", 10000);
+                        result = await bridge.SendCommand(commandFormat);
 
                         // 判断返回结果
                         if (result.IsSuccess)
@@ -112,7 +113,8 @@ namespace Isc.Yft.UsbBridge.Outside
                     {
 
                         // 等待 SendCommand 完成并获取返回值
-                        result = await bridge.SendCommand("dir");
+                        CommandFormat command = new CommandFormat("dir", 10000);
+                        result = await bridge.SendCommand(command);
 
                         // 判断返回结果
                         if (result.IsSuccess)

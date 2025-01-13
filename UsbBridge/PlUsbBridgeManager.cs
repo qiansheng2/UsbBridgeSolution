@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using Isc.Yft.UsbBridge.Exceptions;
 using Isc.Yft.UsbBridge.Handler;
+using Newtonsoft.Json;
 
 namespace Isc.Yft.UsbBridge
 {
@@ -383,7 +384,7 @@ namespace Isc.Yft.UsbBridge
             return ret;
         }
 
-        public async Task<Result<String>> SendCommand(String command)
+        public async Task<Result<String>> SendCommand(CommandFormat command)
         {
 
             if (CurrentMode.Position == EUSBPosition.INSIDE)
@@ -399,7 +400,7 @@ namespace Isc.Yft.UsbBridge
             byte[] messageId = Encoding.UTF8.GetBytes(TimeStampIdUtil.GenerateId()); // 带时间戳的13+3位唯一ID
 
             // 设置content
-            byte[] commandBytes = ComUtil.Truncate(Encoding.UTF8.GetBytes(command), Constants.CONTENT_MAX_SIZE);
+            byte[] commandBytes = ComUtil.Truncate(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(command)), Constants.CONTENT_MAX_SIZE);
 
             CommandPacket commandPacket = new CommandPacket
             {
@@ -456,7 +457,7 @@ namespace Isc.Yft.UsbBridge
             // 2) 构造发送器
             DataSender dataSender = new DataSender(_sendRequest, _waitAckToken.Token, _usbCopyline);
 
-            Result<string> ret = Result<String>.Success("发送中...");
+            Result<string> ret = Result<string>.Success("数据发送中...");
             try
             {
                 if (!_backend_cts.IsCancellationRequested)
@@ -481,14 +482,14 @@ namespace Isc.Yft.UsbBridge
             }
             catch (OperationCanceledException)
             {
-                string msg = $"[Main] 任务收到取消信号.";
-                Logger.Info($"[Main] {msg}");
+                string msg = $"发送取消，数据发送时收到取消信号。";
+                Logger.Info($"{msg}");
                 ret = Result<string>.Failure(1012, $"{msg}");
             }
             catch (Exception ex)
             {
-                string msg = $"预期外错误: {ex.Message}...";
-                Logger.Error($"[Main] {msg}");
+                string msg = $"发送失败，预期外错误: {ex.Message}。";
+                Logger.Error($"{msg}");
                 ret = Result<string>.Failure(1013, $"{msg}");
             }
             finally

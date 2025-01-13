@@ -68,7 +68,7 @@ namespace Isc.Yft.UsbBridge
             return ret;
         }
 
-        public async Task<Result<String>> SendCommand(String command)
+        public async Task<Result<String>> SendCommand(CommandFormat command)
         {
             Result<String> ret = await _manager.SendCommand(command);
             return ret;
