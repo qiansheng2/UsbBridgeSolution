@@ -217,7 +217,7 @@ namespace Isc.Yft.UsbBridge
         {
             if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.OFFLINE)
             {
-                return Result<String>.Failure(1303, "本机的USB设备不可用。");
+                return Result<String>.Failure(1001, "本机的USB设备不可用。");
             }
 
             if (!_backend_cts.IsCancellationRequested)
@@ -309,7 +309,7 @@ namespace Isc.Yft.UsbBridge
                 {
                     string errStr = $"预期外错误: {ex.Message}...";
                     Logger.Error($"[Main] {errStr}");
-                    return Result<string>.Failure(1004, $"{errStr}");
+                    return Result<string>.Failure(1002, $"{errStr}");
                 }
             }
             string msg = $"任务取消";
@@ -317,7 +317,7 @@ namespace Isc.Yft.UsbBridge
         }
 
         /// <summary>
-        /// 发送数据
+        /// 异步发送数据
         /// </summary>
         /// <param name="allPackets"></param>
         /// <returns>任务</returns>
@@ -347,7 +347,7 @@ namespace Isc.Yft.UsbBridge
                         // 也可能用 SetException(...) -> 走catch
                         string msg = $"发送失败！信息:{result.ErrorMessage}";
                         Logger.Error($"[Main] {msg}");
-                        ret = Result<string>.Failure(1001, msg);
+                        ret = Result<string>.Failure(1003, msg);
                     }
                     else
                     {
@@ -361,19 +361,19 @@ namespace Isc.Yft.UsbBridge
             {
                 string msg = $"发送超时: {tex.Message}...";
                 Logger.Error($"[Main] {msg}");
-                ret = Result<string>.Failure(1002, $"{msg}");
+                ret = Result<string>.Failure(1004, $"{msg}");
             }
             catch (OperationCanceledException)
             {
                 string msg = $"[Main] 任务收到取消信号.";
                 Logger.Info($"[Main] {msg}");
-                ret = Result<string>.Failure(1004, $"{msg}");
+                ret = Result<string>.Failure(1005, $"{msg}");
             }
             catch (Exception ex)
             {
                 string msg = $"预期外错误: {ex.Message}...";
                 Logger.Error($"[Main] {msg}");
-                ret = Result<string>.Failure(1003, $"{msg}");
+                ret = Result<string>.Failure(1006, $"{msg}");
             }
             finally
             {
@@ -388,12 +388,12 @@ namespace Isc.Yft.UsbBridge
 
             if (CurrentMode.Position == EUSBPosition.INSIDE)
             {
-                return Result<String>.Failure(1301, "内网电脑不能发送命令。");
+                return Result<String>.Failure(1007, "内网电脑不能发送命令。");
             }
 
             //if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.OFFLINE)
             //{
-            //    return Result<String>.Failure(1302, "本机的USB设备不可用。");
+            //    return Result<String>.Failure(1008, "本机的USB设备不可用。");
             //}
 
             byte[] messageId = Encoding.UTF8.GetBytes(TimeStampIdUtil.GenerateId()); // 带时间戳的13+3位唯一ID
@@ -424,29 +424,79 @@ namespace Isc.Yft.UsbBridge
             Result<string> ret = await SendAllPackets(allPackets.ToArray());
             return ret;
         }
-        public async Task<Result<String>> SendAckPacket(Packet packet)
+
+        public Result<String> SendAckPacket(Packet packet)
         {
 
             if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.OFFLINE)
             {
-                return Result<String>.Failure(1302, "本机的USB设备不可用。");
+                return Result<String>.Failure(1009, "本机的USB设备不可用。");
             }
 
-            SynchronizedCollection<Packet> allPackets = new SynchronizedCollection<Packet>
+            SynchronizedCollection<Packet> packets = new SynchronizedCollection<Packet>
             {
                 packet
             }; // 需要传输的命令包
 
             // 待发送数据作为一个整体，一次性全部放入发送队列
-            Result<string> ret = await SendAllPackets(allPackets.ToArray());
+            Result<string> ret = SynSendPackets(packets.ToArray());
             return ret;
         }
 
-        public async Task<Result<String>> SendCommandAck(CommandAckPacket packet)
+        /// <summary>
+        /// 同步发送数据
+        /// </summary>
+        /// <param name="packets">数据包</param>
+        /// <returns>发送结果</returns>
+        private Result<string> SynSendPackets(Packet[] packets)
         {
-            Result<String> ret = await SendAckPacket(packet);
+            // 1) 构造发送请求
+            _sendRequest = new SendRequest(packets);
+
+            // 2) 构造发送器
+            DataSender dataSender = new DataSender(_sendRequest, _waitAckToken.Token, _usbCopyline);
+
+            Result<string> ret = Result<String>.Success("发送中...");
+            try
+            {
+                if (!_backend_cts.IsCancellationRequested)
+                {
+                    // 3) 同步发送
+                    Result<string> result = dataSender.RunSendData();
+
+                    if (!result.IsSuccess)
+                    {
+                        // 发送失败
+                        string msg = $"发送失败！信息:{result.ErrorMessage}。";
+                        Logger.Error($"{msg}");
+                        ret = Result<string>.Failure(1010, msg);
+                    }
+                    else
+                    {
+                        string msg = "发送成功！";
+                        Logger.Info($"[Main] {msg}");
+                        ret = Result<string>.Success($"{msg}");
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                string msg = $"[Main] 任务收到取消信号.";
+                Logger.Info($"[Main] {msg}");
+                ret = Result<string>.Failure(1012, $"{msg}");
+            }
+            catch (Exception ex)
+            {
+                string msg = $"预期外错误: {ex.Message}...";
+                Logger.Error($"[Main] {msg}");
+                ret = Result<string>.Failure(1013, $"{msg}");
+            }
+            finally
+            {
+            }
             return ret;
         }
+
     }
 }
 

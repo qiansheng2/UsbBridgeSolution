@@ -37,7 +37,7 @@ namespace Isc.Yft.UsbBridge.Threading
             {
                 Logger.Info("[DataSender] --------------S Start--------------------");
 
-                // (1) 检查拷贝线状态是否可用
+                // 检查拷贝线状态是否可用
                 _usbCopyline.OpenCopyline();
                 _usbCopyline.UpdateCopylineStatus();
                 if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.ONLINE)
@@ -66,8 +66,8 @@ namespace Isc.Yft.UsbBridge.Threading
                                 Logger.Info($"[DataSender] 已发送[{packet.Index}/{packet.TotalCount}]{packet.Type}包，内容长度：{packet.ContentLength}，写入了{written} 字节.");
                                     
                                 // (3) 如果是业务数据包 => 等待对端 ACK
-                                //     (可根据第一包的Type或其它方式判断)
-                                if (packet.Type != EPacketType.DATA_ACK)
+                                if (packet.Type == EPacketType.DATA || packet.Type == EPacketType.CMD ||
+                                    packet.Type == EPacketType.HEAD || packet.Type == EPacketType.TAIL)
                                 {
                                     // 重置 ackEvent
                                     _ackEvent.Reset();
@@ -87,9 +87,10 @@ namespace Isc.Yft.UsbBridge.Threading
                                         Logger.Info("[DataSender] 收到接收数据线程通知，已收到一个ACK包。");
                                     }
                                 }
-                                else
+                                else if (packet.Type == EPacketType.DATA_ACK || packet.Type == EPacketType.CMD_ACK ||
+                                         packet.Type == EPacketType.HEAD_ACK || packet.Type == EPacketType.TAIL_ACK   )
                                 {
-                                    // 如果是 ACK 包, 这是特殊发送（不需要等待）
+                                    // ACK 包,直接发送（不需要等待）
                                     sendResult = Result<string>.Success("[DataSender] ACK包发送成功: [{packet.Index}/{packet.TotalCount}]{packet.Type}包，内容长度：{packet.ContentLength}，写入了{written} 字节.");
                                 }
                             }
@@ -120,11 +121,6 @@ namespace Isc.Yft.UsbBridge.Threading
                 Logger.Info("[DataSender] --------------S End----------------------");
             }
             return sendResult;
-        }
-
-        public void OnAckReceived(Packet packet)
-        {
-            _request.SetAck(packet);
         }
     }
 }
