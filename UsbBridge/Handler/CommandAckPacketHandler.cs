@@ -14,7 +14,7 @@ namespace Isc.Yft.UsbBridge.Handler
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
         public override async Task<Result<string>> Handle(Packet packet)
         {
-            Result<String> ret = Result<string>.Success("收到CommandAckPacket数据包，已丢弃。");
+            Result<String> ret = Result<string>.Success($"收到CommandAckPacket数据包，内容：{packet}");
             return ret;
         }
     }
