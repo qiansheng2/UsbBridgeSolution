@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Linq;
+using System.Net.Sockets;
 using Isc.Yft.UsbBridge.Exceptions;
 
 namespace Isc.Yft.UsbBridge.Models
@@ -58,7 +59,28 @@ namespace Isc.Yft.UsbBridge.Models
         /// <returns></returns>
         public bool AreAllAcksReceived()
         {
-            return _acks.Values.All(v => v); // 检查所有值是否为 true
+            bool all_acked = true;
+
+            for (int i = 0; i < Packets.Length; i++)
+            {
+                EPacketType type = Packets[i].Type;
+                if (
+                    type != EPacketType.CMD_ACK &&
+                    type != EPacketType.HEAD_ACK &&
+                    type != EPacketType.DATA_ACK &&
+                    type != EPacketType.TAIL_ACK &&
+                    type != EPacketType.HEARTBEAT_ACK
+                    )
+                {
+                    if (GetAck(i) == false)
+                    {
+                        all_acked = false;
+                        break;
+                    }
+                }
+            }
+
+            return all_acked;
         }
     }
 }
