@@ -54,7 +54,7 @@ namespace Isc.Yft.UsbBridge.Threading
                     if (_usbCopyline.Status.RealtimeStatus == ECopylineStatus.ONLINE)
                     {
                         // 3) 正式读数据
-                        byte[] buffer = new byte[Constants.PACKET_MAX_SIZE]; // 缓冲
+                        byte[] buffer = new byte[Constants.PACKET_MAX_SIZE * 5]; // 缓冲
                         Array.Clear(buffer, 0, buffer.Length); // 将 buffer 的所有元素设置为 0x00
                         readCount = _usbCopyline.ReadDataFromDevice(buffer); // 调用对拷线的 ReadDataFromDevice
                         if ( readCount == 0)

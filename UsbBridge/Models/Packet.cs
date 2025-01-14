@@ -192,8 +192,8 @@ namespace Isc.Yft.UsbBridge.Models
         /// </summary>
         public static Packet FromBytes(byte[] buf)
         {
-            if (buf == null || buf.Length<(1024-Constants.CONTENT_MAX_SIZE))
-                throw new ArgumentException($"数据为空或数据字节数少于{1024-Constants.CONTENT_MAX_SIZE}字节，无法转换为数据包！");
+            if (buf == null || buf.Length<(Constants.PACKET_MIN_SIZE))
+                throw new ArgumentException($"数据为空或数据字节数少于{Constants.PACKET_MIN_SIZE}字节，无法转换为数据包！");
 
             Packet packet = new Packet();
             uint offset = 0;
